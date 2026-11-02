@@ -44,7 +44,7 @@ public class LookupService {
         LookupItem item = db.lookups.getById(id);
         if (item == null) return false;
         item.setName(newName);
-        return true;
+        return db.lookups.save(item);
     }
 
     /** Check whether a value exists in a category (e.g. is "First Aid" a valid skill?). */

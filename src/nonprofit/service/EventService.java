@@ -29,6 +29,18 @@ public class EventService extends Subject {
         return e;
     }
 
+    public Event create(String name, String date, String location, String eventType,
+                        List<String> requiredSkills) {
+        Event event = new Event(name, date, location);
+        event.setEventType(eventType == null ? "" : eventType);
+        if (requiredSkills != null) {
+            event.getRequiredSkills().addAll(requiredSkills);
+        }
+        Event saved = db.events.add(event);
+        notifyObservers("EVENT_CREATED", saved);
+        return saved;
+    }
+
     public List<Event> getAll()     { return db.events.getAll(); }
     public Event getById(int id)    { return db.events.getById(id); }
 
@@ -38,6 +50,7 @@ public class EventService extends Subject {
         if (name != null && name.length() > 0)     e.setName(name);
         if (date != null && date.length() > 0)     e.setDate(date);
         if (location != null && location.length() > 0) e.setLocation(location);
+        if (!db.events.save(e)) return false;
         notifyObservers("EVENT_UPDATED", e);
         return true;
     }
@@ -51,6 +64,7 @@ public class EventService extends Subject {
         Volunteer v = db.volunteers.getById(volunteerId);
         if (e == null || v == null) return false;
         e.getVolunteers().add(v);
+        if (!db.events.save(e)) return false;
         notifyObservers("EVENT_UPDATED", e);
         return true;
     }
@@ -89,8 +103,7 @@ public class EventService extends Subject {
         }
 
         Registration reg = new Registration(volunteerId, eventId, LocalDate.now().toString());
-        db.registrations.add(reg);
-        return reg;
+        return db.registrations.add(reg);
     }
 
     /** Get all registrations for an event. */
@@ -125,8 +138,7 @@ public class EventService extends Subject {
 
         String ticketNumber = "TKT-" + (ticketSeq++);
         Ticket ticket = new Ticket(ticketNumber, eventId, volunteerId);
-        db.tickets.add(ticket);
-        return ticket;
+        return db.tickets.add(ticket);
     }
 
     /** List tickets for an event. */
@@ -145,6 +157,6 @@ public class EventService extends Subject {
         Ticket t = db.tickets.getById(ticketId);
         if (t == null || t.isCheckedIn()) return false;
         t.checkIn();
-        return true;
+        return db.tickets.save(t);
     }
 }

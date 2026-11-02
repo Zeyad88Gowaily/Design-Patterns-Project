@@ -23,6 +23,7 @@ public abstract class Donation extends Entity implements DonationInfo {
     }
 
     public Donor getDonor() { return donor; }
+    public void setDonor(Donor donor) { this.donor = donor; }
     @Override
     public double getAmount() { return amount; }
     public void setAmount(double amount) { this.amount = amount; }

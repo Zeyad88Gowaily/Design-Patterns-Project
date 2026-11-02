@@ -5,9 +5,6 @@ import java.util.Scanner;
 
 /**
  * MVC - the View. Only input/output lives here, no business logic.
- *
- * TODO [PHASE 1 - Person C] USER CONTROL PANEL: build a Swing window (ControlPanelView)
- *      with the same operations; controllers should work with either view.
  */
 public class ConsoleView {
     private Scanner in = new Scanner(System.in);

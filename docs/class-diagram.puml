@@ -1,0 +1,422 @@
+@startuml
+title MissionOS - Implemented Class Diagram
+left to right direction
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+package "nonprofit" {
+  class Main
+}
+
+package "nonprofit.view" {
+  class AuthenticationDialog <<View>>
+  class ConsoleAuthenticationDialog <<View>>
+  class ConsoleView <<View>> {
+    - in: Scanner
+  }
+  class ControlPanelView <<View>> {
+    - donationController: DonationPanelController
+    - volunteerController: VolunteerPanelController
+    - eventController: EventPanelController
+    - beneficiaryController: BeneficiaryPanelController
+    - lookupController: LookupPanelController
+    - logoutAction: Runnable
+    - donorTable: JTable
+    - donationTable: JTable
+    - volunteerTable: JTable
+    - eventTable: JTable
+    - beneficiaryTable: JTable
+    - lookupTable: JTable
+    - registrationTableModel: DefaultTableModel
+    - ticketTableModel: DefaultTableModel
+    - donorTableModel: DefaultTableModel
+    - donationTableModel: DefaultTableModel
+    - volunteerTableModel: DefaultTableModel
+    - eventTableModel: DefaultTableModel
+    - beneficiaryTableModel: DefaultTableModel
+    - lookupTableModel: DefaultTableModel
+    - categoryCombo: JComboBox<String>
+  }
+}
+
+package "nonprofit.controller" {
+  class MainController <<Controller>> {
+    - view: ConsoleView
+    - donations: DonationController
+    - volunteers: VolunteerController
+    - events: EventController
+    - beneficiaries: BeneficiaryController
+    - lookups: LookupController
+  }
+  class DonationController <<Controller>> {
+    - service: DonationService
+    - view: ConsoleView
+  }
+  class VolunteerController <<Controller>> {
+    - service: VolunteerService
+    - view: ConsoleView
+  }
+  class EventController <<Controller>> {
+    - service: EventService
+    - view: ConsoleView
+  }
+  class BeneficiaryController <<Controller>> {
+    - service: BeneficiaryService
+    - view: ConsoleView
+  }
+  class LookupController <<Controller>> {
+    - service: LookupService
+    - view: ConsoleView
+    - CATEGORIES: String[]
+  }
+  class DonationPanelController <<Controller>> {
+    - service: DonationService
+  }
+  class VolunteerPanelController <<Controller>> {
+    - service: VolunteerService
+  }
+  class EventPanelController <<Controller>> {
+    - service: EventService
+  }
+  class BeneficiaryPanelController <<Controller>> {
+    - service: BeneficiaryService
+  }
+  class LookupPanelController <<Controller>> {
+    - service: LookupService
+  }
+}
+
+package "nonprofit.service" {
+  class SupabaseAuthService <<Service>> {
+    - client: SupabaseRestClient
+  }
+  class "SupabaseAuthService.AuthSession" as AuthSession {
+    - accessToken: String
+    - refreshToken: String
+  }
+  class DonationService <<Service>> {
+    - db: DataStore
+  }
+  class VolunteerService <<Service>> {
+    - db: DataStore
+  }
+  class EventService <<Service>> {
+    - db: DataStore
+    - ticketSeq: int
+  }
+  class BeneficiaryService <<Service>> {
+    - db: DataStore
+  }
+  class LookupService <<Service>> {
+    - db: DataStore
+  }
+  class DonationFactory <<Factory>> {
+    + create(type, donor, amount, detail): Donation
+  }
+}
+
+package "nonprofit.repository" {
+  class DataStore <<Singleton>> {
+    - instance: DataStore
+    + donors: Repository<Donor>
+    + donations: Repository<Donation>
+    + volunteers: Repository<Volunteer>
+    + events: Repository<Event>
+    + beneficiaries: Repository<Beneficiary>
+    + lookups: Repository<LookupItem>
+    + registrations: Repository<Registration>
+    + tickets: Repository<Ticket>
+    + configure(client): void
+    + getInstance(): DataStore
+  }
+  class "Repository<T>" as Repository <<Repository>> {
+    - items: Map<Integer, T>
+    - nextId: int
+    + add(item): T
+    + getById(id): T
+    + getAll(): List<T>
+    + save(item): boolean
+    + remove(id): boolean
+  }
+  class "SupabaseRepository<T>" as SupabaseRepository {
+    - client: SupabaseRestClient
+    - table: String
+    - codec: EntityJsonCodec<T>
+  }
+  class DonationRepository {
+    - donorCodec: EntityJsonCodec<Donor>
+  }
+  class EventRepository
+  class "EntityJsonCodec<T>" as EntityJsonCodec {
+    - entityType: Class<T>
+    - gson: Gson
+  }
+  class SupabaseConfig {
+    - url: String
+    - apiKey: String
+  }
+  class SupabaseRestClient {
+    - TABLE_NAME: Pattern
+    - TIMEOUT_MILLIS: int
+    - baseUrl: String
+    - apiKey: String
+    - accessToken: String
+    - refreshToken: String
+    - httpClient: HttpClient
+    - gson: Gson
+  }
+  class SupabaseException {
+    + SupabaseException(message)
+    + SupabaseException(message, cause)
+  }
+}
+
+package "nonprofit.model" {
+  abstract class Entity {
+    # id: int
+  }
+  class Donor {
+    - name: String
+    - email: String
+    - phone: String
+    - notificationChannel: String
+  }
+  abstract class Donation {
+    # donor: Donor
+    # amount: double
+    # date: LocalDate
+    # decoratorDescription: String
+    + getType(): String
+    + describe(): String
+  }
+  interface DonationInfo {
+    + getAmount(): double
+    + describe(): String
+  }
+  class OnlineDonation
+  class CheckDonation
+  class InKindDonation {
+    - item: String
+  }
+  abstract class DonationDecorator {
+    # wrapped: DonationInfo
+  }
+  class GiftAidDecorator
+  class MatchingFundDecorator
+  class RecurringDecorator {
+    - months: int
+  }
+  class Volunteer {
+    - name: String
+    - email: String
+    - skills: List<String>
+    - availability: List<String>
+    - hours: double
+  }
+  class Event {
+    - name: String
+    - date: String
+    - location: String
+    - eventType: String
+    - status: String
+    - volunteers: List<Volunteer>
+    - requiredSkills: List<String>
+  }
+  class Beneficiary {
+    - name: String
+    - contact: String
+    - need: String
+  }
+  class LookupItem {
+    - name: String
+    - category: String
+  }
+  class Registration {
+    - volunteerId: int
+    - eventId: int
+    - registrationDate: String
+  }
+  class Ticket {
+    - ticketNumber: String
+    - eventId: int
+    - volunteerId: int
+    - checkedIn: boolean
+  }
+}
+
+package "nonprofit.observer" {
+  class Subject {
+    - observers: List<Observer>
+    + attach(observer): void
+    + detach(observer): void
+    # notifyObservers(eventType, data): void
+  }
+  interface Observer {
+    + update(eventType, data): void
+  }
+}
+
+package "nonprofit.communication" {
+  class DonationReceiptObserver {
+    - notifier: Notifier
+  }
+  class EventUpdateObserver {
+    - notifier: Notifier
+  }
+  class Notifier <<Strategy Context>> {
+    - strategy: NotificationStrategy
+    + setStrategy(strategy): void
+    + notify(to, message): void
+  }
+  interface NotificationStrategy <<Strategy>> {
+    + send(to, message): void
+  }
+  class EmailStrategy
+  class SmsStrategy
+  class SocialMediaStrategy
+  class NotificationFactory <<Factory>> {
+    + create(type): NotificationStrategy
+  }
+}
+
+Main ..> SupabaseConfig
+Main ..> SupabaseRestClient
+Main ..> SupabaseAuthService
+Main ..> DataStore
+Main ..> DonationService
+Main ..> VolunteerService
+Main ..> EventService
+Main ..> BeneficiaryService
+Main ..> LookupService
+Main ..> DonationPanelController
+Main ..> VolunteerPanelController
+Main ..> EventPanelController
+Main ..> BeneficiaryPanelController
+Main ..> LookupPanelController
+Main ..> DonationReceiptObserver
+Main ..> EventUpdateObserver
+Main ..> AuthenticationDialog
+Main ..> ConsoleAuthenticationDialog
+Main ..> ControlPanelView
+Main ..> MainController
+
+AuthenticationDialog ..> SupabaseAuthService
+ConsoleAuthenticationDialog ..> SupabaseAuthService
+SupabaseAuthService --> SupabaseRestClient
+SupabaseAuthService *-- AuthSession
+SupabaseConfig ..> SupabaseRestClient
+SupabaseRestClient ..> SupabaseException
+SupabaseRestClient --> "Supabase Auth + PostgREST" : HTTPS
+
+DataStore "1" o-- "1" Repository : donors
+DataStore "1" o-- "1" DonationRepository : donations
+DataStore "1" o-- "1" Repository : volunteers
+DataStore "1" o-- "1" EventRepository : events
+DataStore "1" o-- "1" Repository : beneficiaries
+DataStore "1" o-- "1" Repository : lookups
+DataStore "1" o-- "1" Repository : registrations
+DataStore "1" o-- "1" Repository : tickets
+DataStore ..> SupabaseRestClient : configured on login
+SupabaseRepository --|> Repository
+DonationRepository --|> SupabaseRepository
+EventRepository --|> SupabaseRepository : <Event>
+DonationRepository --> EntityJsonCodec : donorCodec
+SupabaseRepository --> SupabaseRestClient
+SupabaseRepository --> EntityJsonCodec
+EventRepository ..> Volunteer : persists assignments
+DonationRepository ..> Donor : resolves donor foreign key
+Repository ..> Entity
+
+DonationService --> DataStore
+VolunteerService --> DataStore
+EventService --> DataStore
+BeneficiaryService --> DataStore
+LookupService --> DataStore
+DonationService ..> Donor
+VolunteerService ..> Volunteer
+EventService ..> Event
+EventService ..> Registration
+EventService ..> Ticket
+BeneficiaryService ..> Beneficiary
+LookupService ..> LookupItem
+DonationFactory ..> LookupItem : validates type
+
+MainController --> DonationController
+MainController --> VolunteerController
+MainController --> EventController
+MainController --> BeneficiaryController
+MainController --> LookupController
+MainController --> ConsoleView
+DonationController --> DonationService
+VolunteerController --> VolunteerService
+EventController --> EventService
+BeneficiaryController --> BeneficiaryService
+LookupController --> LookupService
+ControlPanelView --> DonationPanelController
+ControlPanelView --> VolunteerPanelController
+ControlPanelView --> EventPanelController
+ControlPanelView --> BeneficiaryPanelController
+ControlPanelView --> LookupPanelController
+DonationPanelController --> DonationService
+VolunteerPanelController --> VolunteerService
+EventPanelController --> EventService
+BeneficiaryPanelController --> BeneficiaryService
+LookupPanelController --> LookupService
+
+DonationService --|> Subject
+EventService --|> Subject
+Subject o-- Observer
+DonationReceiptObserver ..|> Observer
+EventUpdateObserver ..|> Observer
+DonationReceiptObserver ..> Donation
+EventUpdateObserver ..> Event
+EventUpdateObserver ..> Volunteer
+DonationService ..> DonationFactory
+DonationFactory ..> Donation
+DonationReceiptObserver --> Notifier
+EventUpdateObserver --> Notifier
+DonationReceiptObserver ..> NotificationFactory
+EventUpdateObserver ..> NotificationFactory
+Notifier --> NotificationStrategy
+EmailStrategy ..|> NotificationStrategy
+SmsStrategy ..|> NotificationStrategy
+SocialMediaStrategy ..|> NotificationStrategy
+NotificationFactory ..> NotificationStrategy
+SupabaseException --|> RuntimeException
+
+Entity <|-- Donor
+Entity <|-- Donation
+Entity <|-- Volunteer
+Entity <|-- Event
+Entity <|-- Beneficiary
+Entity <|-- LookupItem
+Entity <|-- Registration
+Entity <|-- Ticket
+Donation ..|> DonationInfo
+DonationDecorator ..|> DonationInfo
+DonationDecorator o--> DonationInfo : wraps
+DonationDecorator <|-- GiftAidDecorator
+DonationDecorator <|-- MatchingFundDecorator
+DonationDecorator <|-- RecurringDecorator
+Donation <|-- OnlineDonation
+Donation <|-- CheckDonation
+Donation <|-- InKindDonation
+Donor "1" <-- "0..*" Donation : contributes
+Event "0..*" -- "0..*" Volunteer : assigned
+Registration "*" --> "1" Event
+Registration "*" --> "1" Volunteer
+Ticket "*" --> "1" Event
+Ticket "*" --> "1" Volunteer
+LookupItem ..> DonationFactory : validates donation type
+
+note right of DataStore
+  Singleton repository registry.
+  Configured after successful login;
+  no in-memory fallback in the application.
+end note
+
+note bottom
+  Phase 2 ideas only (not implemented classes): Iterator, Facade, Proxy,
+  Template Method, Command, State, and external-service Adapter.
+end note
+@enduml

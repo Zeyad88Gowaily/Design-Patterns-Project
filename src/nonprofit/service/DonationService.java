@@ -21,7 +21,11 @@ public class DonationService extends Subject {
     // ==================== Donor CRUD ====================
 
     public Donor addDonor(String name, String email, String phone) {
-        return db.donors.add(new Donor(name, email, phone));
+        return addDonor(name, email, phone, "email");
+    }
+
+    public Donor addDonor(String name, String email, String phone, String notificationChannel) {
+        return db.donors.add(new Donor(name, email, phone, notificationChannel));
     }
 
     public List<Donor> getDonors() { return db.donors.getAll(); }
@@ -34,7 +38,7 @@ public class DonationService extends Subject {
         if (name != null && !name.isEmpty())  d.setName(name);
         if (email != null && !email.isEmpty()) d.setEmail(email);
         if (phone != null && !phone.isEmpty()) d.setPhone(phone);
-        return true;
+        return db.donors.save(d);
     }
 
     public boolean deleteDonor(int id) { return db.donors.remove(id); }
@@ -42,8 +46,7 @@ public class DonationService extends Subject {
     // ==================== Donation CRUD ====================
 
     public Donation donate(Donor donor, String type, double amount, String detail) {
-        Donation d = DonationFactory.create(type, donor, amount, detail);
-        db.donations.add(d);
+        Donation d = db.donations.add(DonationFactory.create(type, donor, amount, detail));
         notifyObservers("DONATION_RECEIVED", d);
         return d;
     }
@@ -86,6 +89,9 @@ public class DonationService extends Subject {
         // Update the stored donation with the effective amount
         donation.setAmount(info.getAmount());
         donation.setDecoratorDescription(desc.toString());
+        if (!db.donations.save(donation)) {
+            throw new IllegalStateException("Could not save the decorated donation.");
+        }
 
         return info;
     }

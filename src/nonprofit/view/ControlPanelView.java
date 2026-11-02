@@ -7,8 +7,13 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.util.List;
 
+import nonprofit.controller.BeneficiaryPanelController;
+import nonprofit.controller.DonationPanelController;
+import nonprofit.controller.EventPanelController;
+import nonprofit.controller.LookupPanelController;
+import nonprofit.controller.VolunteerPanelController;
 import nonprofit.model.*;
-import nonprofit.service.*;
+import nonprofit.repository.SupabaseException;
 
 /**
  * MVC - Swing-based View for the Non-Profit System.
@@ -17,11 +22,11 @@ import nonprofit.service.*;
  */
 public class ControlPanelView extends JFrame {
 
-    private DonationService donationService;
-    private VolunteerService volunteerService;
-    private EventService eventService;
-    private BeneficiaryService beneficiaryService;
-    private LookupService lookupService;
+    private final DonationPanelController donationController;
+    private final VolunteerPanelController volunteerController;
+    private final EventPanelController eventController;
+    private final BeneficiaryPanelController beneficiaryController;
+    private final LookupPanelController lookupController;
 
     // Volunteer tab components
     private DefaultTableModel volunteerTableModel;
@@ -53,15 +58,20 @@ public class ControlPanelView extends JFrame {
     private DefaultTableModel lookupTableModel;
     private JTable lookupTable;
     private JComboBox<String> categoryCombo;
+    private final Runnable logoutAction;
 
-    public ControlPanelView(DonationService donationService, VolunteerService volunteerService,
-                            EventService eventService, BeneficiaryService beneficiaryService,
-                            LookupService lookupService) {
-        this.donationService = donationService;
-        this.volunteerService = volunteerService;
-        this.eventService = eventService;
-        this.beneficiaryService = beneficiaryService;
-        this.lookupService = lookupService;
+    public ControlPanelView(DonationPanelController donationController,
+                            VolunteerPanelController volunteerController,
+                            EventPanelController eventController,
+                            BeneficiaryPanelController beneficiaryController,
+                            LookupPanelController lookupController,
+                            Runnable logoutAction) {
+        this.donationController = donationController;
+        this.volunteerController = volunteerController;
+        this.eventController = eventController;
+        this.beneficiaryController = beneficiaryController;
+        this.lookupController = lookupController;
+        this.logoutAction = logoutAction;
 
         setTitle("MissionOS - Non-Profit Management System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -80,7 +90,16 @@ public class ControlPanelView extends JFrame {
         tabs.addTab("Beneficiaries", buildBeneficiaryPanel());
         tabs.addTab("Lookup Tables", buildLookupPanel());
 
-        add(tabs);
+        JButton logout = new JButton("Sign out");
+        logout.addActionListener(e -> {
+            setVisible(false);
+            dispose();
+            this.logoutAction.run();
+        });
+        JPanel content = new JPanel(new BorderLayout());
+        content.add(logout, BorderLayout.NORTH);
+        content.add(tabs, BorderLayout.CENTER);
+        add(content);
     }
 
     // ========================= DONATIONS TAB =========================
@@ -97,7 +116,8 @@ public class ControlPanelView extends JFrame {
         JPanel donorPanel = new JPanel(new BorderLayout(5, 5));
         donorPanel.setBorder(BorderFactory.createTitledBorder("Donors"));
 
-        donorTableModel = new DefaultTableModel(new String[]{"ID", "Name", "Email", "Phone"}, 0) {
+        donorTableModel = new DefaultTableModel(
+                new String[]{"ID", "Name", "Email", "Phone", "Notification"}, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         donorTable = new JTable(donorTableModel);
@@ -106,8 +126,8 @@ public class ControlPanelView extends JFrame {
         JPanel donorButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton addDonor = new JButton("Add Donor");
         JButton refreshDonors = new JButton("Refresh");
-        addDonor.addActionListener(e -> doAddDonor());
-        refreshDonors.addActionListener(e -> refreshDonorTable());
+        addDonor.addActionListener(e -> runUiAction(this::doAddDonor));
+        refreshDonors.addActionListener(e -> runUiAction(this::refreshDonorTable));
         donorButtons.add(addDonor);
         donorButtons.add(refreshDonors);
         donorPanel.add(donorButtons, BorderLayout.SOUTH);
@@ -125,8 +145,8 @@ public class ControlPanelView extends JFrame {
         JPanel donationButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton makeDonation = new JButton("Make Donation");
         JButton refreshDonations = new JButton("Refresh");
-        makeDonation.addActionListener(e -> doMakeDonation());
-        refreshDonations.addActionListener(e -> refreshDonationTable());
+        makeDonation.addActionListener(e -> runUiAction(this::doMakeDonation));
+        refreshDonations.addActionListener(e -> runUiAction(this::refreshDonationTable));
         donationButtons.add(makeDonation);
         donationButtons.add(refreshDonations);
         donationPanel.add(donationButtons, BorderLayout.SOUTH);
@@ -144,20 +164,27 @@ public class ControlPanelView extends JFrame {
         JTextField nameF = new JTextField();
         JTextField emailF = new JTextField();
         JTextField phoneF = new JTextField();
-        Object[] fields = {"Name:", nameF, "Email:", emailF, "Phone:", phoneF};
+        JComboBox<String> channel = new JComboBox<>(new String[]{"email", "sms"});
+        Object[] fields = {"Name:", nameF, "Email:", emailF, "Phone:", phoneF,
+                "Donation receipt via:", channel};
         int ok = JOptionPane.showConfirmDialog(this, fields, "Add Donor", JOptionPane.OK_CANCEL_OPTION);
         if (ok == JOptionPane.OK_OPTION) {
             String name = nameF.getText().trim();
             String email = emailF.getText().trim();
             String phone = phoneF.getText().trim();
             if (name.isEmpty()) { showError("Name is required."); return; }
-            donationService.addDonor(name, email, phone);
+            String selectedChannel = (String) channel.getSelectedItem();
+            if ("sms".equals(selectedChannel) && phone.isEmpty()) {
+                showError("A phone number is required for SMS receipts.");
+                return;
+            }
+            donationController.addDonor(name, email, phone, selectedChannel);
             refreshDonorTable();
         }
     }
 
     private void doMakeDonation() {
-        List<Donor> donors = donationService.getDonors();
+        List<Donor> donors = donationController.getDonors();
         if (donors.isEmpty()) { showError("Add a donor first."); return; }
         String[] donorNames = new String[donors.size()];
         for (int i = 0; i < donors.size(); i++) {
@@ -176,7 +203,7 @@ public class ControlPanelView extends JFrame {
                 String type = (String) typeCombo.getSelectedItem();
                 double amount = Double.parseDouble(amountF.getText().trim());
                 String detail = detailF.getText().trim();
-                donationService.donate(donor, type, amount, detail);
+                donationController.donate(donor, type, amount, detail);
                 refreshDonationTable();
             } catch (NumberFormatException ex) {
                 showError("Invalid amount.");
@@ -186,14 +213,15 @@ public class ControlPanelView extends JFrame {
 
     private void refreshDonorTable() {
         donorTableModel.setRowCount(0);
-        for (Donor d : donationService.getDonors()) {
-            donorTableModel.addRow(new Object[]{d.getId(), d.getName(), d.getEmail(), d.getPhone()});
+        for (Donor d : donationController.getDonors()) {
+            donorTableModel.addRow(new Object[]{d.getId(), d.getName(), d.getEmail(), d.getPhone(),
+                    d.getNotificationChannel()});
         }
     }
 
     private void refreshDonationTable() {
         donationTableModel.setRowCount(0);
-        for (Donation d : donationService.getDonations()) {
+        for (Donation d : donationController.getDonations()) {
             donationTableModel.addRow(new Object[]{d.getId(), d.getType(), d.getAmount(),
                     d.getDonor().getName(), d.getDate()});
         }
@@ -221,13 +249,13 @@ public class ControlPanelView extends JFrame {
         JButton matchSkill = new JButton("Match by Skill");
         JButton refresh = new JButton("Refresh");
 
-        add.addActionListener(e -> doAddVolunteer());
-        edit.addActionListener(e -> doEditVolunteer());
-        delete.addActionListener(e -> doDeleteVolunteer());
-        addSkill.addActionListener(e -> doAddSkillVolunteer());
-        setAvail.addActionListener(e -> doSetAvailability());
-        matchSkill.addActionListener(e -> doMatchBySkill());
-        refresh.addActionListener(e -> refreshVolunteerTable());
+        add.addActionListener(e -> runUiAction(this::doAddVolunteer));
+        edit.addActionListener(e -> runUiAction(this::doEditVolunteer));
+        delete.addActionListener(e -> runUiAction(this::doDeleteVolunteer));
+        addSkill.addActionListener(e -> runUiAction(this::doAddSkillVolunteer));
+        setAvail.addActionListener(e -> runUiAction(this::doSetAvailability));
+        matchSkill.addActionListener(e -> runUiAction(this::doMatchBySkill));
+        refresh.addActionListener(e -> runUiAction(this::refreshVolunteerTable));
 
         buttons.add(add);
         buttons.add(edit);
@@ -252,7 +280,7 @@ public class ControlPanelView extends JFrame {
             String name = nameF.getText().trim();
             String email = emailF.getText().trim();
             if (name.isEmpty()) { showError("Name is required."); return; }
-            volunteerService.add(name, email, skillF.getText().trim());
+            volunteerController.add(name, email, skillF.getText().trim());
             refreshVolunteerTable();
         }
     }
@@ -261,7 +289,7 @@ public class ControlPanelView extends JFrame {
         int row = volunteerTable.getSelectedRow();
         if (row < 0) { showError("Select a volunteer first."); return; }
         int id = (int) volunteerTableModel.getValueAt(row, 0);
-        Volunteer v = volunteerService.getById(id);
+        Volunteer v = volunteerController.getById(id);
         if (v == null) { showError("Not found."); return; }
 
         JTextField nameF = new JTextField(v.getName());
@@ -269,7 +297,7 @@ public class ControlPanelView extends JFrame {
         Object[] fields = {"Name:", nameF, "Email:", emailF};
         int ok = JOptionPane.showConfirmDialog(this, fields, "Edit Volunteer #" + id, JOptionPane.OK_CANCEL_OPTION);
         if (ok == JOptionPane.OK_OPTION) {
-            volunteerService.update(id, nameF.getText().trim(), emailF.getText().trim());
+            volunteerController.update(id, nameF.getText().trim(), emailF.getText().trim());
             refreshVolunteerTable();
         }
     }
@@ -281,7 +309,7 @@ public class ControlPanelView extends JFrame {
         int confirm = JOptionPane.showConfirmDialog(this, "Delete volunteer #" + id + "?",
                 "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            volunteerService.delete(id);
+            volunteerController.delete(id);
             refreshVolunteerTable();
         }
     }
@@ -292,7 +320,7 @@ public class ControlPanelView extends JFrame {
         int id = (int) volunteerTableModel.getValueAt(row, 0);
         String skill = JOptionPane.showInputDialog(this, "Skill to add:");
         if (skill != null && !skill.trim().isEmpty()) {
-            volunteerService.addSkill(id, skill.trim());
+            volunteerController.addSkill(id, skill.trim());
             refreshVolunteerTable();
         }
     }
@@ -309,7 +337,7 @@ public class ControlPanelView extends JFrame {
                 String trimmed = d.trim();
                 if (!trimmed.isEmpty()) days.add(trimmed);
             }
-            volunteerService.setAvailability(id, days);
+            volunteerController.setAvailability(id, days);
             refreshVolunteerTable();
         }
     }
@@ -317,7 +345,7 @@ public class ControlPanelView extends JFrame {
     private void doMatchBySkill() {
         String skill = JOptionPane.showInputDialog(this, "Skill to search for:");
         if (skill != null && !skill.trim().isEmpty()) {
-            List<Volunteer> matches = volunteerService.matchBySkill(skill.trim());
+            List<Volunteer> matches = volunteerController.matchBySkill(skill.trim());
             if (matches.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "No volunteers with skill '" + skill + "'.");
             } else {
@@ -332,7 +360,7 @@ public class ControlPanelView extends JFrame {
 
     private void refreshVolunteerTable() {
         volunteerTableModel.setRowCount(0);
-        for (Volunteer v : volunteerService.getAll()) {
+        for (Volunteer v : volunteerController.getAll()) {
             volunteerTableModel.addRow(new Object[]{
                     v.getId(), v.getName(), v.getEmail(),
                     String.join(", ", v.getSkills()),
@@ -366,12 +394,12 @@ public class ControlPanelView extends JFrame {
         JButton assign = new JButton("Assign Volunteer");
         JButton suggest = new JButton("Suggest Volunteers");
         JButton refresh = new JButton("Refresh");
-        create.addActionListener(e -> doCreateEvent());
-        edit.addActionListener(e -> doEditEvent());
-        delete.addActionListener(e -> doDeleteEvent());
-        assign.addActionListener(e -> doAssignVolunteer());
-        suggest.addActionListener(e -> doSuggestVolunteers());
-        refresh.addActionListener(e -> refreshEventTable());
+        create.addActionListener(e -> runUiAction(this::doCreateEvent));
+        edit.addActionListener(e -> runUiAction(this::doEditEvent));
+        delete.addActionListener(e -> runUiAction(this::doDeleteEvent));
+        assign.addActionListener(e -> runUiAction(this::doAssignVolunteer));
+        suggest.addActionListener(e -> runUiAction(this::doSuggestVolunteers));
+        refresh.addActionListener(e -> runUiAction(this::refreshEventTable));
         row1.add(create); row1.add(edit); row1.add(delete);
         row1.add(assign); row1.add(suggest); row1.add(refresh);
 
@@ -381,11 +409,11 @@ public class ControlPanelView extends JFrame {
         JButton attend = new JButton("Mark Attendance");
         JButton listReg = new JButton("List Registrations");
         JButton listTix = new JButton("List Tickets");
-        register.addActionListener(e -> doRegister());
-        ticket.addActionListener(e -> doIssueTicket());
-        attend.addActionListener(e -> doMarkAttendance());
-        listReg.addActionListener(e -> doListRegistrations());
-        listTix.addActionListener(e -> doListTickets());
+        register.addActionListener(e -> runUiAction(this::doRegister));
+        ticket.addActionListener(e -> runUiAction(this::doIssueTicket));
+        attend.addActionListener(e -> runUiAction(this::doMarkAttendance));
+        listReg.addActionListener(e -> runUiAction(this::doListRegistrations));
+        listTix.addActionListener(e -> runUiAction(this::doListTickets));
         row2.add(register); row2.add(ticket); row2.add(attend);
         row2.add(listReg); row2.add(listTix);
 
@@ -409,16 +437,17 @@ public class ControlPanelView extends JFrame {
         if (ok == JOptionPane.OK_OPTION) {
             String name = nameF.getText().trim();
             if (name.isEmpty()) { showError("Name is required."); return; }
-            Event e = eventService.create(name, dateF.getText().trim(), locF.getText().trim());
             String type = typeF.getText().trim();
-            if (!type.isEmpty()) e.setEventType(type);
             String skills = skillsF.getText().trim();
+            List<String> requiredSkills = new java.util.ArrayList<String>();
             if (!skills.isEmpty()) {
                 for (String s : skills.split(",")) {
                     String trimmed = s.trim();
-                    if (!trimmed.isEmpty()) e.getRequiredSkills().add(trimmed);
+                    if (!trimmed.isEmpty()) requiredSkills.add(trimmed);
                 }
             }
+            eventController.create(name, dateF.getText().trim(), locF.getText().trim(),
+                    type, requiredSkills);
             refreshEventTable();
         }
     }
@@ -427,7 +456,7 @@ public class ControlPanelView extends JFrame {
         int row = eventTable.getSelectedRow();
         if (row < 0) { showError("Select an event first."); return; }
         int id = (int) eventTableModel.getValueAt(row, 0);
-        Event e = eventService.getById(id);
+        Event e = eventController.getById(id);
         if (e == null) { showError("Not found."); return; }
 
         JTextField nameF = new JTextField(e.getName());
@@ -436,7 +465,7 @@ public class ControlPanelView extends JFrame {
         Object[] fields = {"Name:", nameF, "Date:", dateF, "Location:", locF};
         int ok = JOptionPane.showConfirmDialog(this, fields, "Edit Event #" + id, JOptionPane.OK_CANCEL_OPTION);
         if (ok == JOptionPane.OK_OPTION) {
-            eventService.update(id, nameF.getText().trim(), dateF.getText().trim(), locF.getText().trim());
+            eventController.update(id, nameF.getText().trim(), dateF.getText().trim(), locF.getText().trim());
             refreshEventTable();
         }
     }
@@ -448,7 +477,7 @@ public class ControlPanelView extends JFrame {
         int confirm = JOptionPane.showConfirmDialog(this, "Delete event #" + id + "?",
                 "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            eventService.delete(id);
+            eventController.delete(id);
             refreshEventTable();
         }
     }
@@ -461,7 +490,7 @@ public class ControlPanelView extends JFrame {
         if (input != null) {
             try {
                 int vId = Integer.parseInt(input.trim());
-                boolean ok = eventService.assignVolunteer(eventId, vId);
+                boolean ok = eventController.assignVolunteer(eventId, vId);
                 showInfo(ok ? "Assigned." : "Event or volunteer not found.");
                 refreshEventTable();
             } catch (NumberFormatException ex) { showError("Invalid ID."); }
@@ -472,7 +501,7 @@ public class ControlPanelView extends JFrame {
         int row = eventTable.getSelectedRow();
         if (row < 0) { showError("Select an event first."); return; }
         int eventId = (int) eventTableModel.getValueAt(row, 0);
-        List<Volunteer> suggestions = eventService.suggestVolunteers(eventId);
+        List<Volunteer> suggestions = eventController.suggestVolunteers(eventId);
         if (suggestions.isEmpty()) {
             showInfo("No matching volunteers found.");
         } else {
@@ -493,7 +522,7 @@ public class ControlPanelView extends JFrame {
         if (input != null) {
             try {
                 int vId = Integer.parseInt(input.trim());
-                Registration reg = eventService.register(eventId, vId);
+                Registration reg = eventController.register(eventId, vId);
                 showInfo(reg != null ? "Registered: " + reg : "Failed (not found or already registered).");
             } catch (NumberFormatException ex) { showError("Invalid ID."); }
         }
@@ -507,7 +536,7 @@ public class ControlPanelView extends JFrame {
         if (input != null) {
             try {
                 int vId = Integer.parseInt(input.trim());
-                Ticket t = eventService.issueTicket(eventId, vId);
+                Ticket t = eventController.issueTicket(eventId, vId);
                 showInfo(t != null ? "Ticket issued: " + t : "Failed (not registered or already issued).");
             } catch (NumberFormatException ex) { showError("Invalid ID."); }
         }
@@ -518,7 +547,7 @@ public class ControlPanelView extends JFrame {
         if (input != null) {
             try {
                 int tId = Integer.parseInt(input.trim());
-                boolean ok = eventService.markAttendance(tId);
+                boolean ok = eventController.markAttendance(tId);
                 showInfo(ok ? "Checked in!" : "Ticket not found or already checked in.");
             } catch (NumberFormatException ex) { showError("Invalid ID."); }
         }
@@ -528,7 +557,7 @@ public class ControlPanelView extends JFrame {
         int row = eventTable.getSelectedRow();
         if (row < 0) { showError("Select an event first."); return; }
         int eventId = (int) eventTableModel.getValueAt(row, 0);
-        List<Registration> regs = eventService.getRegistrations(eventId);
+        List<Registration> regs = eventController.getRegistrations(eventId);
         if (regs.isEmpty()) {
             showInfo("No registrations for event #" + eventId + ".");
         } else {
@@ -544,7 +573,7 @@ public class ControlPanelView extends JFrame {
         int row = eventTable.getSelectedRow();
         if (row < 0) { showError("Select an event first."); return; }
         int eventId = (int) eventTableModel.getValueAt(row, 0);
-        List<Ticket> tickets = eventService.getTickets(eventId);
+        List<Ticket> tickets = eventController.getTickets(eventId);
         if (tickets.isEmpty()) {
             showInfo("No tickets for event #" + eventId + ".");
         } else {
@@ -558,7 +587,7 @@ public class ControlPanelView extends JFrame {
 
     private void refreshEventTable() {
         eventTableModel.setRowCount(0);
-        for (Event e : eventService.getAll()) {
+        for (Event e : eventController.getAll()) {
             eventTableModel.addRow(new Object[]{
                     e.getId(), e.getName(), e.getEventType(), e.getDate(),
                     e.getLocation(), e.getStatus(), e.getVolunteers().size(),
@@ -583,8 +612,8 @@ public class ControlPanelView extends JFrame {
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton add = new JButton("Add");
         JButton refresh = new JButton("Refresh");
-        add.addActionListener(e -> doAddBeneficiary());
-        refresh.addActionListener(e -> refreshBeneficiaryTable());
+        add.addActionListener(e -> runUiAction(this::doAddBeneficiary));
+        refresh.addActionListener(e -> runUiAction(this::refreshBeneficiaryTable));
         buttons.add(add);
         buttons.add(refresh);
         panel.add(buttons, BorderLayout.SOUTH);
@@ -602,14 +631,14 @@ public class ControlPanelView extends JFrame {
         if (ok == JOptionPane.OK_OPTION) {
             String name = nameF.getText().trim();
             if (name.isEmpty()) { showError("Name is required."); return; }
-            beneficiaryService.add(name, contactF.getText().trim(), needF.getText().trim());
+            beneficiaryController.add(name, contactF.getText().trim(), needF.getText().trim());
             refreshBeneficiaryTable();
         }
     }
 
     private void refreshBeneficiaryTable() {
         beneficiaryTableModel.setRowCount(0);
-        for (Beneficiary b : beneficiaryService.getAll()) {
+        for (Beneficiary b : beneficiaryController.getAll()) {
             beneficiaryTableModel.addRow(new Object[]{b.getId(), b.getName(), b.getContact(), b.getNeed()});
         }
     }
@@ -624,7 +653,7 @@ public class ControlPanelView extends JFrame {
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.add(new JLabel("Category:"));
         categoryCombo = new JComboBox<>(new String[]{"SKILL", "EVENT_TYPE", "DONATION_TYPE", "NEED_TYPE"});
-        categoryCombo.addActionListener(e -> refreshLookupTable());
+        categoryCombo.addActionListener(e -> runUiAction(this::refreshLookupTable));
         topPanel.add(categoryCombo);
         panel.add(topPanel, BorderLayout.NORTH);
 
@@ -641,10 +670,10 @@ public class ControlPanelView extends JFrame {
         JButton editBtn = new JButton("Edit");
         JButton delete = new JButton("Delete");
         JButton refresh = new JButton("Refresh");
-        add.addActionListener(e -> doAddLookup());
-        editBtn.addActionListener(e -> doEditLookup());
-        delete.addActionListener(e -> doDeleteLookup());
-        refresh.addActionListener(e -> refreshLookupTable());
+        add.addActionListener(e -> runUiAction(this::doAddLookup));
+        editBtn.addActionListener(e -> runUiAction(this::doEditLookup));
+        delete.addActionListener(e -> runUiAction(this::doDeleteLookup));
+        refresh.addActionListener(e -> runUiAction(this::refreshLookupTable));
         buttons.add(add);
         buttons.add(editBtn);
         buttons.add(delete);
@@ -662,7 +691,7 @@ public class ControlPanelView extends JFrame {
     private void doAddLookup() {
         String name = JOptionPane.showInputDialog(this, "New " + getSelectedCategory() + " entry name:");
         if (name != null && !name.trim().isEmpty()) {
-            lookupService.add(name.trim(), getSelectedCategory());
+            lookupController.add(name.trim(), getSelectedCategory());
             refreshLookupTable();
         }
     }
@@ -674,7 +703,7 @@ public class ControlPanelView extends JFrame {
         String current = (String) lookupTableModel.getValueAt(row, 1);
         String newName = JOptionPane.showInputDialog(this, "New name:", current);
         if (newName != null && !newName.trim().isEmpty()) {
-            lookupService.update(id, newName.trim());
+            lookupController.update(id, newName.trim());
             refreshLookupTable();
         }
     }
@@ -686,14 +715,14 @@ public class ControlPanelView extends JFrame {
         int confirm = JOptionPane.showConfirmDialog(this, "Delete entry #" + id + "?",
                 "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            lookupService.delete(id);
+            lookupController.delete(id);
             refreshLookupTable();
         }
     }
 
     private void refreshLookupTable() {
         lookupTableModel.setRowCount(0);
-        for (LookupItem item : lookupService.getByCategory(getSelectedCategory())) {
+        for (LookupItem item : lookupController.getByCategory(getSelectedCategory())) {
             lookupTableModel.addRow(new Object[]{item.getId(), item.getName(), item.getCategory()});
         }
     }
@@ -702,6 +731,14 @@ public class ControlPanelView extends JFrame {
 
     private void showError(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void runUiAction(Runnable action) {
+        try {
+            action.run();
+        } catch (SupabaseException ex) {
+            showError(ex.getMessage());
+        }
     }
 
     private void showInfo(String msg) {

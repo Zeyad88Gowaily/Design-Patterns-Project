@@ -47,17 +47,16 @@ public class EventController {
         String name     = view.ask("Name");
         String date     = view.ask("Date (e.g. 2026-12-01)");
         String location = view.ask("Location");
-        Event e = service.create(name, date, location);
-        // Optionally set event type and required skills
         String type = view.ask("Event type (or blank)");
-        if (type.length() > 0) e.setEventType(type);
         String skills = view.ask("Required skills (comma-separated, or blank)");
+        java.util.List<String> requiredSkills = new java.util.ArrayList<String>();
         if (skills.length() > 0) {
             for (String s : skills.split(",")) {
                 String trimmed = s.trim();
-                if (trimmed.length() > 0) e.getRequiredSkills().add(trimmed);
+                if (trimmed.length() > 0) requiredSkills.add(trimmed);
             }
         }
+        Event e = service.create(name, date, location, type, requiredSkills);
         view.show("Created " + e);
     }
 

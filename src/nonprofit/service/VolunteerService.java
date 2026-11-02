@@ -33,7 +33,7 @@ public class VolunteerService {
         if (v == null) return false;
         if (name != null && name.length() > 0) v.setName(name);
         if (email != null && email.length() > 0) v.setEmail(email);
-        return true;
+        return db.volunteers.save(v);
     }
 
     // --- Delete ---
@@ -46,7 +46,7 @@ public class VolunteerService {
         if (!v.getSkills().contains(skill)) {
             v.getSkills().add(skill);
         }
-        return true;
+        return db.volunteers.save(v);
     }
 
     // --- Availability ---
@@ -55,7 +55,7 @@ public class VolunteerService {
         if (v == null) return false;
         v.getAvailability().clear();
         v.getAvailability().addAll(days);
-        return true;
+        return db.volunteers.save(v);
     }
 
     // --- Matching ---

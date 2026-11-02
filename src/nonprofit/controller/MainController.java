@@ -5,7 +5,6 @@ import nonprofit.view.ConsoleView;
 /**
  * MVC - main menu. Every module controller is plugged in here.
  *
- * TODO [PHASE 1 - Person C] USER CONTROL PANEL: Swing version of this menu.
  * TODO [PHASE 2 - Person C] FACADE: replace the individual services with one
  * NonProfitFacade.
  * TODO [PHASE 2 - Person C] ADMIN PAGES: login + admin-only screens (lookup

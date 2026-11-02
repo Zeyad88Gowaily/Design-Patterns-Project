@@ -39,6 +39,7 @@ public class Event extends Entity {
     public void setLocation(String location) { this.location = location; }
     public void setEventType(String type)    { this.eventType = type; }
     public void setStatus(String status)     { this.status = status; }
+    public void setVolunteers(List<Volunteer> volunteers) { this.volunteers = volunteers; }
 
     @Override
     public String toString() {
