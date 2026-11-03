@@ -12,16 +12,12 @@ import nonprofit.observer.Subject;
 import nonprofit.repository.DataStore;
 
 /**
- * Business logic for events. Also a SUBJECT: notifies observers when an
- * event is created or changed.
- *
- * TODO [PHASE 2 - Person B] COMMAND (undo register/assign) and STATE (event lifecycle).
+ * Event, registration, ticket and attendance operations.
+ * Subject in the Observer pattern: observers are told when an event is created or changed.
  */
 public class EventService extends Subject {
     private DataStore db = DataStore.getInstance();
-    private int ticketSeq = 1000;   // auto-incrementing ticket numbers
-
-    // ==================== Event CRUD ====================
+    private static final int TICKET_START = 1000;   // first ticket is TKT-1001
 
     public Event create(String name, String date, String location) {
         Event e = db.events.add(new Event(name, date, location));
@@ -57,19 +53,20 @@ public class EventService extends Subject {
 
     public boolean delete(int id) { return db.events.remove(id); }
 
-    // ==================== Volunteer assignment (with skill matching) ====================
-
     public boolean assignVolunteer(int eventId, int volunteerId) {
         Event e = db.events.getById(eventId);
         Volunteer v = db.volunteers.getById(volunteerId);
         if (e == null || v == null) return false;
+        for (Volunteer assigned : e.getVolunteers()) {
+            if (assigned.getId() == volunteerId) return false;   // already assigned
+        }
         e.getVolunteers().add(v);
         if (!db.events.save(e)) return false;
         notifyObservers("EVENT_UPDATED", e);
         return true;
     }
 
-    /** Suggest volunteers whose skills match the event's required skills. */
+    /** Volunteers who have at least one of the event's required skills. */
     public List<Volunteer> suggestVolunteers(int eventId) {
         Event e = db.events.getById(eventId);
         if (e == null) return new ArrayList<Volunteer>();
@@ -87,15 +84,12 @@ public class EventService extends Subject {
         return suggestions;
     }
 
-    // ==================== Registration ====================
-
-    /** Register a volunteer for an event. */
+    /** Returns null if the event or volunteer is missing, or the volunteer is already registered. */
     public Registration register(int eventId, int volunteerId) {
         Event e = db.events.getById(eventId);
         Volunteer v = db.volunteers.getById(volunteerId);
         if (e == null || v == null) return null;
 
-        // Prevent duplicate registration
         for (Registration r : db.registrations.getAll()) {
             if (r.getEventId() == eventId && r.getVolunteerId() == volunteerId) {
                 return null;
@@ -106,7 +100,7 @@ public class EventService extends Subject {
         return db.registrations.add(reg);
     }
 
-    /** Get all registrations for an event. */
+    /** Registrations for one event. */
     public List<Registration> getRegistrations(int eventId) {
         List<Registration> result = new ArrayList<Registration>();
         for (Registration r : db.registrations.getAll()) {
@@ -115,11 +109,8 @@ public class EventService extends Subject {
         return result;
     }
 
-    // ==================== Ticketing ====================
-
-    /** Issue a ticket for a registered volunteer. */
+    /** Returns null if the volunteer is not registered or already has a ticket. */
     public Ticket issueTicket(int eventId, int volunteerId) {
-        // Must be registered first
         boolean registered = false;
         for (Registration r : db.registrations.getAll()) {
             if (r.getEventId() == eventId && r.getVolunteerId() == volunteerId) {
@@ -129,19 +120,29 @@ public class EventService extends Subject {
         }
         if (!registered) return null;
 
-        // Prevent duplicate ticket
+        // Continue from the highest stored ticket number so numbers stay unique across restarts.
+        int highest = TICKET_START;
         for (Ticket t : db.tickets.getAll()) {
             if (t.getEventId() == eventId && t.getVolunteerId() == volunteerId) {
                 return null;
             }
+            highest = Math.max(highest, numberOf(t.getTicketNumber()));
         }
 
-        String ticketNumber = "TKT-" + (ticketSeq++);
+        String ticketNumber = "TKT-" + (highest + 1);
         Ticket ticket = new Ticket(ticketNumber, eventId, volunteerId);
         return db.tickets.add(ticket);
     }
 
-    /** List tickets for an event. */
+    private static int numberOf(String ticketNumber) {
+        try {
+            return Integer.parseInt(ticketNumber.substring(ticketNumber.lastIndexOf('-') + 1));
+        } catch (RuntimeException ex) {
+            return 0;
+        }
+    }
+
+    /** Tickets for one event. */
     public List<Ticket> getTickets(int eventId) {
         List<Ticket> result = new ArrayList<Ticket>();
         for (Ticket t : db.tickets.getAll()) {
@@ -150,9 +151,7 @@ public class EventService extends Subject {
         return result;
     }
 
-    // ==================== Attendance ====================
-
-    /** Mark a ticket as checked-in (attendance). */
+    /** Checks the ticket in. Returns false if it is missing or already used. */
     public boolean markAttendance(int ticketId) {
         Ticket t = db.tickets.getById(ticketId);
         if (t == null || t.isCheckedIn()) return false;

@@ -3,10 +3,7 @@ package nonprofit.controller;
 import nonprofit.service.LookupService;
 import nonprofit.view.ConsoleView;
 
-/**
- * CRUD LOOKUP TABLES: admin menu to manage skills, event types,
- * donation types, and need types.
- */
+/** Console menu for the lookup tables. */
 public class LookupController {
     private LookupService service;
     private ConsoleView view;

@@ -3,9 +3,7 @@ package nonprofit.view;
 import java.util.List;
 import java.util.Scanner;
 
-/**
- * MVC - the View. Only input/output lives here, no business logic.
- */
+/** Console input and output. Contains no business logic. */
 public class ConsoleView {
     private Scanner in = new Scanner(System.in);
 

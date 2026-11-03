@@ -1,9 +1,6 @@
 package nonprofit.model;
 
-/**
- * DECORATOR: adds 25% Gift Aid on top of the donation amount.
- * In the UK, Gift Aid lets charities reclaim 25% extra from HMRC.
- */
+/** Adds 25% Gift Aid to the amount. */
 public class GiftAidDecorator extends DonationDecorator {
 
     public GiftAidDecorator(DonationInfo wrapped) {

@@ -3,7 +3,7 @@ package nonprofit.observer;
 import java.util.ArrayList;
 import java.util.List;
 
-/** OBSERVER: services extend this and call notifyObservers() when something changes. */
+/** Observer pattern: keeps its observers and notifies them when something changes. */
 public class Subject {
     private List<Observer> observers = new ArrayList<Observer>();
 

@@ -1,9 +1,6 @@
 package nonprofit.model;
 
-/**
- * DECORATOR: multiplies the donation for recurring monthly pledges.
- * If the donor pledges for N months, the effective total = base * N.
- */
+/** Multiplies the amount by the number of monthly payments. */
 public class RecurringDecorator extends DonationDecorator {
     private int months;
 

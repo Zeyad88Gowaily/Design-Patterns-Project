@@ -1,9 +1,6 @@
 package nonprofit.model;
 
-/**
- * Represents a ticket issued to a volunteer for an event.
- * Tracks whether the volunteer has checked in (attendance).
- */
+/** A ticket for an event. checkedIn records attendance. */
 public class Ticket extends Entity {
     private String ticketNumber;
     private int eventId;

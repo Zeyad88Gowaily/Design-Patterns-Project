@@ -1,6 +1,6 @@
 package nonprofit.communication;
 
-/** Context class of the Strategy pattern. */
+/** Strategy context: sends messages with whichever strategy is currently set. */
 public class Notifier {
     private NotificationStrategy strategy;
 

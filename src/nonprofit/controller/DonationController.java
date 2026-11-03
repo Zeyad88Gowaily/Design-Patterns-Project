@@ -1,15 +1,11 @@
 package nonprofit.controller;
 
 import nonprofit.model.Donation;
-import nonprofit.model.DonationInfo;
 import nonprofit.model.Donor;
 import nonprofit.service.DonationService;
 import nonprofit.view.ConsoleView;
 
-/**
- * MVC - Controller for donations (Person A).
- * Full CRUD for donors and donations + Decorator pattern add-ons.
- */
+/** Console menu for donors and donations. */
 public class DonationController {
     private DonationService service;
     private ConsoleView view;
@@ -42,7 +38,11 @@ public class DonationController {
     }
 
     private void doAddDonor() {
-        Donor d = service.addDonor(view.ask("Name"), view.ask("Email"), view.ask("Phone"));
+        String name = view.ask("Name");
+        String email = view.ask("Email");
+        String phone = view.ask("Phone");
+        String channel = view.ask("Receipt channel (email / sms / social)");
+        Donor d = service.addDonor(name, email, phone, channel.isEmpty() ? "email" : channel);
         view.show("Added " + d);
     }
 
@@ -71,29 +71,23 @@ public class DonationController {
         d = service.getDonorById(id);
         if (d == null) { view.show("No such donor."); return; }
 
-        String type = view.ask("Type (online / check / inkind)");
-        String detail = type.equalsIgnoreCase("inkind") ? view.ask("Item description") : "";
+        view.show("Types: " + service.getDonationTypes());
+        String type = view.ask("Type");
+        String detail = type.replaceAll("[^A-Za-z]", "").equalsIgnoreCase("inkind")
+                ? view.ask("Item description") : "";
         double amount = view.askDouble("Amount");
 
-        Donation donation = service.donate(d, type, amount, detail);
-
-        // DECORATOR: ask about add-ons
         view.show("Apply add-ons?");
-        String giftAid = view.ask("Gift Aid +25%? (y/n)");
-        String matching = view.ask("Matching Fund x2? (y/n)");
-        String recurring = view.ask("Recurring? Enter months (0 = no)");
+        boolean ga = view.ask("Gift Aid +25%? (y/n)").equalsIgnoreCase("y");
+        boolean mf = view.ask("Matching Fund x2? (y/n)").equalsIgnoreCase("y");
         int months = 0;
-        try { months = Integer.parseInt(recurring); } catch (NumberFormatException ignored) {}
+        try { months = Integer.parseInt(view.ask("Recurring? Enter months (0 = no)")); }
+        catch (NumberFormatException ignored) {}
 
-        boolean ga = giftAid.equalsIgnoreCase("y");
-        boolean mf = matching.equalsIgnoreCase("y");
-
+        Donation donation = service.donate(d, type, amount, detail, ga, mf, months);
         if (ga || mf || months > 1) {
-            DonationInfo decorated = service.applyDecorators(donation, ga, mf, months);
-            view.show("Effective amount after add-ons: " + String.format("%.2f", decorated.getAmount()));
-            view.show("Description: " + decorated.describe());
+            view.show("Effective amount after add-ons: " + String.format("%.2f", donation.getAmount()));
         }
-
         view.show("Saved " + donation);
     }
 

@@ -3,11 +3,7 @@ package nonprofit.communication;
 import nonprofit.model.Donation;
 import nonprofit.observer.Observer;
 
-/**
- * OBSERVER example: when a donation is received, thank the donor.
- *
- * TODO [PHASE 2 - Person A] replace the thank-you text with a real receipt (TEMPLATE METHOD).
- */
+/** Observer: sends the donor a receipt through their chosen channel when a donation is received. */
 public class DonationReceiptObserver implements Observer {
     private Notifier notifier = new Notifier(NotificationFactory.create("email"));
 

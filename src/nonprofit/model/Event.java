@@ -3,17 +3,12 @@ package nonprofit.model;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * An event with volunteers, required skills, and lifecycle status.
- *
- * TODO [PHASE 2 - Person B] STATE pattern: replace the String status with an EventState
- *      (Planned -> Open -> Ongoing -> Completed / Cancelled).
- */
+/** An event with its assigned volunteers, required skills and status. */
 public class Event extends Entity {
     private String name;
     private String date;
     private String location;
-    private String eventType = "";              // from EVENT_TYPE lookup
+    private String eventType = "";              // value from the EVENT_TYPE lookup
     private String status = "PLANNED";
     private List<Volunteer> volunteers = new ArrayList<Volunteer>();
     private List<String> requiredSkills = new ArrayList<String>();
@@ -24,7 +19,6 @@ public class Event extends Entity {
         this.location = location;
     }
 
-    // --- Getters ---
     public String getName()                 { return name; }
     public String getDate()                 { return date; }
     public String getLocation()             { return location; }
@@ -33,7 +27,6 @@ public class Event extends Entity {
     public List<Volunteer> getVolunteers()   { return volunteers; }
     public List<String> getRequiredSkills()  { return requiredSkills; }
 
-    // --- Setters (for edit/update) ---
     public void setName(String name)         { this.name = name; }
     public void setDate(String date)         { this.date = date; }
     public void setLocation(String location) { this.location = location; }

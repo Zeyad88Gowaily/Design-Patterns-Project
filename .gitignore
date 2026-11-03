@@ -25,3 +25,6 @@ target/
 
 # Logs
 *.log
+
+# Local secrets
+.env

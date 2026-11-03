@@ -1,69 +1,57 @@
 # MissionOS
 
-MissionOS is a Java Swing non-profit management application backed by Supabase.
-All management screens are available to authenticated users; authorization is
-enforced by Supabase Row Level Security, not by a key embedded in the app.
+Non-profit management system (CSE336 major task, phase 1). Java 11, a Swing application with
+a dashboard, light and dark themes, and a text-menu alternative. Data is stored in Supabase.
 
-## Supabase setup
+## Setup
 
-1. Create a Supabase project.
-2. Open the Supabase SQL Editor and run [`database/supabase-schema.sql`](database/supabase-schema.sql).
-   It creates the application tables, foreign keys, initial lookup data, and
-   policies allowing authenticated users to manage records.
-   Entity attributes are stored as JSONB payloads; IDs and relationship columns
-   are relational and protected by foreign keys.
-3. Configure the application environment. Use the project URL and its public
-   anon/publishable key; never use the `service_role` secret in this desktop app.
+1. Create a Supabase project and run `database/supabase-schema.sql` in its SQL editor.
+2. Create a file named `.env` in this folder with the project URL and the public anon key
+   (never the `service_role` key):
 
-PowerShell example:
+   ```
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your-public-anon-key
+   ```
 
-```powershell
-$env:SUPABASE_URL = "https://your-project.supabase.co"
-$env:SUPABASE_ANON_KEY = "your-public-anon-or-publishable-key"
-```
+   `.env` is git-ignored. Real environment variables override it.
+3. Create a user: the app has a sign-up option on its login screen.
 
-Set the environment variables for the same terminal session used to launch the
-application. The app does not fall back to in-memory storage if configuration
-is missing or Supabase is unavailable.
-
-## Build and run
-
-Requires Java 11 or newer and Maven.
+## Run
 
 ```powershell
-mvn clean package
-mvn exec:java "-Dexec.mainClass=nonprofit.Main" "-Dexec.args=--gui"
+.\run.ps1             # Swing control panel (run.bat does the same)
+.\run.ps1 -Console    # console menu
+mvn clean package     # build and run the tests
 ```
 
-The application prompts users to sign in or create an account before opening
-the management UI. If Supabase email confirmation is enabled, new users must
-confirm their email before signing in. The console interface remains available
-by omitting `--gui` (authentication is still required).
+Maven and Java 11+ are required.
 
-## Design diagram
+## Layout
 
-[`docs/class-diagram.puml`](docs/class-diagram.puml) shows the implemented
-classes, their relationships, and the pattern roles reflected in source. Ideas
-for phase 2 are marked as planned and are not represented as implemented
-classes.
+```
+src/nonprofit/
+  model/          entities, donation types and decorators
+  repository/     Repository, DataStore (singleton), Supabase access
+  observer/       Subject, Observer
+  communication/  notification strategies, factory, observers
+  service/        business logic
+  controller/     console and Swing controllers
+  view/           console view, control panel, login dialogs
+database/         Supabase schema and seed data
+docs/             requirements, CRUD matrix, phase 1 checklist, class diagrams
+test/             JUnit tests
+```
 
-## Phase 1 coverage
+Flow: view -> controller -> service -> `DataStore` -> repository -> Supabase.
 
-- Supabase persistence is wired for donors, donations, volunteers, events,
-  beneficiaries, lookup items, registrations, and tickets.
-- Supabase email/password sign-in, signup, session refresh, and sign-out are
-  included. The SQL policies grant record access to any authenticated user.
-- The existing Swing management interface is retained and now includes
-  authentication and donor email/SMS receipt preference.
-- The class diagram includes every top-level source type and was checked
-  against the code.
-- The official phase-one rubric and requirement traceability are documented in
-  [`docs/phase-1-requirements.md`](docs/phase-1-requirements.md).
+## Class diagrams
 
-The application has not been connected to a project-specific Supabase
-instance as this repository does not include credentials. Apply the schema and
-set the environment variables above to run the live integration.
+Three diagrams in `docs/diagrams/` cover Phase 1:
 
-The intended nonprofit client must confirm its organization-specific privacy,
-retention, authorization, communication, and reporting requirements before
-deployment; see the requirements traceability document.
+- `class-diagram-domain.png`: entities, donation types and the Decorator add-ons
+- `class-diagram-patterns.png`: Observer, Strategy and Factory
+- `class-diagram-layers.png`: MVC layers, the Singleton `DataStore` and persistence
+
+`database-tables.png` shows the Supabase tables. `class-diagram-full.puml` is the complete diagram with
+every class (too large to read as one picture). Each `.puml` file is the source of its picture.

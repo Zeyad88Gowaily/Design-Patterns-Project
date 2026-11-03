@@ -12,7 +12,7 @@ import nonprofit.model.Donation;
 import nonprofit.model.Registration;
 import nonprofit.model.Ticket;
 
-public class SupabaseRepository<T extends Entity> extends Repository<T> {
+public class SupabaseRepository<T extends Entity> implements Repository<T> {
     private final SupabaseRestClient client;
     private final String table;
     private final EntityJsonCodec<T> codec;

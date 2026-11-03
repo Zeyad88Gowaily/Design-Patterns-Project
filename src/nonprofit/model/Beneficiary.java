@@ -1,10 +1,6 @@
 package nonprofit.model;
 
-/**
- * A beneficiary who receives help from the non-profit.
- *
- * TODO [PHASE 2 - Person C] track distribution of resources + impact evaluation.
- */
+/** A person or group that receives help from the organisation. */
 public class Beneficiary extends Entity {
     private String name;
     private String contact;

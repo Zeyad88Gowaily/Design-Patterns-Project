@@ -6,15 +6,10 @@ import java.util.List;
 import nonprofit.model.Volunteer;
 import nonprofit.repository.DataStore;
 
-/**
- * Business logic for volunteers.
- *
- * TODO [PHASE 2 - Person B] hours tracking + certificate; ITERATOR for searching volunteers.
- */
+/** Volunteer operations: skills, availability and matching. */
 public class VolunteerService {
     private DataStore db = DataStore.getInstance();
 
-    // --- Create ---
     public Volunteer add(String name, String email, String skill) {
         Volunteer v = new Volunteer(name, email);
         if (skill != null && skill.length() > 0) {
@@ -23,11 +18,9 @@ public class VolunteerService {
         return db.volunteers.add(v);
     }
 
-    // --- Read ---
     public List<Volunteer> getAll()       { return db.volunteers.getAll(); }
     public Volunteer getById(int id)      { return db.volunteers.getById(id); }
 
-    // --- Update ---
     public boolean update(int id, String name, String email) {
         Volunteer v = db.volunteers.getById(id);
         if (v == null) return false;
@@ -36,10 +29,8 @@ public class VolunteerService {
         return db.volunteers.save(v);
     }
 
-    // --- Delete ---
     public boolean delete(int id) { return db.volunteers.remove(id); }
 
-    // --- Skills ---
     public boolean addSkill(int volunteerId, String skill) {
         Volunteer v = db.volunteers.getById(volunteerId);
         if (v == null || skill == null || skill.isEmpty()) return false;
@@ -49,7 +40,6 @@ public class VolunteerService {
         return db.volunteers.save(v);
     }
 
-    // --- Availability ---
     public boolean setAvailability(int volunteerId, List<String> days) {
         Volunteer v = db.volunteers.getById(volunteerId);
         if (v == null) return false;
@@ -58,9 +48,7 @@ public class VolunteerService {
         return db.volunteers.save(v);
     }
 
-    // --- Matching ---
-
-    /** Find volunteers that have a given skill. */
+    /** Volunteers who have the skill. */
     public List<Volunteer> matchBySkill(String requiredSkill) {
         List<Volunteer> matched = new ArrayList<Volunteer>();
         for (Volunteer v : db.volunteers.getAll()) {
@@ -74,7 +62,7 @@ public class VolunteerService {
         return matched;
     }
 
-    /** Find volunteers available on a given day. */
+    /** Volunteers available on the day. */
     public List<Volunteer> matchByAvailability(String day) {
         List<Volunteer> matched = new ArrayList<Volunteer>();
         for (Volunteer v : db.volunteers.getAll()) {

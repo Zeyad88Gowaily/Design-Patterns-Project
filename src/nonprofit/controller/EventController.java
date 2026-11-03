@@ -6,7 +6,7 @@ import nonprofit.model.Ticket;
 import nonprofit.service.EventService;
 import nonprofit.view.ConsoleView;
 
-/** MVC - Controller for events (Person B). */
+/** Console menu for events. */
 public class EventController {
     private EventService service;
     private ConsoleView view;

@@ -1,15 +1,12 @@
 package nonprofit.model;
 
 /**
- * A simple lookup-table entry (e.g. a skill name, event type, donation type, need type).
- * Reuses the Repository<T extends Entity> infrastructure for full CRUD.
- *
- * CRUD LOOKUP TABLES: one generic entity covers all four lookup categories;
- * the category field tells us which table the item belongs to.
+ * One lookup table entry. The category says which table it belongs to
+ * (SKILL, EVENT_TYPE, DONATION_TYPE or NEED_TYPE).
  */
 public class LookupItem extends Entity {
     private String name;
-    private String category;   // "SKILL", "EVENT_TYPE", "DONATION_TYPE", "NEED_TYPE"
+    private String category;
 
     public LookupItem(String name, String category) {
         this.name = name;

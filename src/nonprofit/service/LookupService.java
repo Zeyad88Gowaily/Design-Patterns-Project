@@ -7,19 +7,18 @@ import nonprofit.model.LookupItem;
 import nonprofit.repository.DataStore;
 
 /**
- * CRUD LOOKUP TABLES: provides add / list / delete for any lookup category
- * (skills, event types, donation types, need types).
- * All categories share the same repository — filtered by the category field.
+ * Lookup tables: skills, event types, donation types and need types.
+ * All categories share one repository and are told apart by their category.
  */
 public class LookupService {
     private DataStore db = DataStore.getInstance();
 
-    /** Add a new entry to the given category. */
+    /** Adds an entry to a category. */
     public LookupItem add(String name, String category) {
         return db.lookups.add(new LookupItem(name, category.toUpperCase()));
     }
 
-    /** List all entries in a category. */
+    /** Entries of one category. */
     public List<LookupItem> getByCategory(String category) {
         List<LookupItem> result = new ArrayList<LookupItem>();
         for (LookupItem item : db.lookups.getAll()) {
@@ -30,16 +29,13 @@ public class LookupService {
         return result;
     }
 
-    /** Get all entries regardless of category. */
     public List<LookupItem> getAll() { return db.lookups.getAll(); }
 
-    /** Delete a lookup entry by id. */
     public boolean delete(int id) { return db.lookups.remove(id); }
 
-    /** Get a single entry by id. */
     public LookupItem getById(int id) { return db.lookups.getById(id); }
 
-    /** Update the name of a lookup entry. */
+    /** Renames an entry. */
     public boolean update(int id, String newName) {
         LookupItem item = db.lookups.getById(id);
         if (item == null) return false;
@@ -47,7 +43,7 @@ public class LookupService {
         return db.lookups.save(item);
     }
 
-    /** Check whether a value exists in a category (e.g. is "First Aid" a valid skill?). */
+    /** True if the category already has an entry with this name (case-insensitive). */
     public boolean exists(String name, String category) {
         for (LookupItem item : getByCategory(category)) {
             if (item.getName().equalsIgnoreCase(name)) return true;

@@ -1,6 +1,6 @@
 package nonprofit.model;
 
-/** Base class for everything stored in a repository (gives it an id). */
+/** Base class for everything stored in the database. Holds the id. */
 public abstract class Entity {
     protected int id;
 

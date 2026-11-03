@@ -3,7 +3,7 @@ package nonprofit.model;
 public class InKindDonation extends Donation {
     private String item;
 
-    /** amount = estimated value of the item. */
+    /** The amount is the estimated value of the item. */
     public InKindDonation(Donor donor, double amount, String item) {
         super(donor, amount);
         this.item = item;

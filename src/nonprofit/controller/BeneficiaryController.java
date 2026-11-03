@@ -4,7 +4,7 @@ import nonprofit.model.Beneficiary;
 import nonprofit.service.BeneficiaryService;
 import nonprofit.view.ConsoleView;
 
-/** MVC - Controller for beneficiaries (Person C). Full CRUD. */
+/** Console menu for beneficiaries. */
 public class BeneficiaryController {
     private BeneficiaryService service;
     private ConsoleView view;

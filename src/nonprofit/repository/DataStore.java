@@ -2,11 +2,10 @@ package nonprofit.repository;
 
 import nonprofit.model.*;
 
-/** SINGLETON: one shared set of Supabase-backed repositories for application services. */
+/** Singleton: the single access point to all repositories. */
 public class DataStore {
     private static DataStore instance;
 
-    // --- Core entity repositories ---
     public final Repository<Donor> donors;
     public final Repository<Donation> donations;
     public final Repository<Volunteer> volunteers;

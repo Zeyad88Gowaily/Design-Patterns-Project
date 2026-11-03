@@ -1,9 +1,6 @@
 package nonprofit.communication;
 
-/**
- * FACTORY: creates the notification strategy from a name.
- * STRATEGY pattern: the user or system can pick email, sms, or social media at runtime.
- */
+/** Factory: returns the notification strategy for a channel name (email, sms or social). */
 public class NotificationFactory {
     public static NotificationStrategy create(String type) {
         if ("sms".equalsIgnoreCase(type)) {
@@ -12,6 +9,6 @@ public class NotificationFactory {
         if ("social".equalsIgnoreCase(type) || "socialmedia".equalsIgnoreCase(type)) {
             return new SocialMediaStrategy();
         }
-        return new EmailStrategy();   // default
+        return new EmailStrategy();   // email is the default
     }
 }

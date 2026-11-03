@@ -3,15 +3,9 @@ package nonprofit.communication;
 import nonprofit.model.Event;
 import nonprofit.model.Volunteer;
 import nonprofit.observer.Observer;
+import nonprofit.repository.DataStore;
 
-/**
- * OBSERVER pattern: notifies volunteers when an event is created or updated.
- *
- * Why Observer? — Event changes (new event, volunteer assigned, details changed)
- * need to reach the right people automatically without the EventService knowing
- * who those people are or how to contact them. The Observer pattern decouples
- * the "what happened" (EventService) from the "who cares" (this class).
- */
+/** Observer: tells volunteers when an event is created or updated. */
 public class EventUpdateObserver implements Observer {
     private Notifier notifier = new Notifier(NotificationFactory.create("email"));
 
@@ -21,13 +15,15 @@ public class EventUpdateObserver implements Observer {
         Event event = (Event) data;
 
         if ("EVENT_CREATED".equals(eventType)) {
-            // Announce the new event (logged to console as a general broadcast).
-            notifier.notify("all-volunteers@nonprofit.org",
-                    "New event created: \"" + event.getName()
-                            + "\" on " + event.getDate()
-                            + " at " + event.getLocation() + ". Sign up now!");
+            // Announce the new event to every volunteer.
+            for (Volunteer v : DataStore.getInstance().volunteers.getAll()) {
+                notifier.notify(v.getEmail(),
+                        "New event created: \"" + event.getName()
+                                + "\" on " + event.getDate()
+                                + " at " + event.getLocation() + ". Sign up now!");
+            }
         } else if ("EVENT_UPDATED".equals(eventType)) {
-            // Notify every volunteer already assigned to this event.
+            // Tell the volunteers already assigned.
             for (Volunteer v : event.getVolunteers()) {
                 notifier.notify(v.getEmail(),
                         "Event update: \"" + event.getName()

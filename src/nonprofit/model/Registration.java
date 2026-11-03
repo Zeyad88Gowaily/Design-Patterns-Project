@@ -1,9 +1,6 @@
 package nonprofit.model;
 
-/**
- * Represents a volunteer's registration to an event.
- * Links a Volunteer to an Event with a registration date.
- */
+/** A volunteer's registration for an event. */
 public class Registration extends Entity {
     private int volunteerId;
     private int eventId;

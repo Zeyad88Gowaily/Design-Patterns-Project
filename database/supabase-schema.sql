@@ -51,6 +51,14 @@ create table if not exists public.tickets (
     constraint tickets_event_volunteer_unique unique (event_id, volunteer_id)
 );
 
+-- Rules the application also checks, enforced here as well.
+create unique index if not exists event_volunteers_unique
+    on public.event_volunteers (event_id, volunteer_id);
+create unique index if not exists tickets_number_unique
+    on public.tickets ((data->>'ticketNumber'));
+create unique index if not exists lookups_name_category_unique
+    on public.lookups (lower(data->>'name'), (data->>'category'));
+
 do $$
 declare
     table_name text;

@@ -1,9 +1,6 @@
 package nonprofit.model;
 
-/**
- * DECORATOR: doubles the donation via a corporate matching programme.
- * The company pledges to match every dollar donated by an employee.
- */
+/** Doubles the amount (corporate matching). */
 public class MatchingFundDecorator extends DonationDecorator {
 
     public MatchingFundDecorator(DonationInfo wrapped) {

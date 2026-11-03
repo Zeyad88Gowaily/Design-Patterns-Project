@@ -5,11 +5,7 @@ import java.util.List;
 import nonprofit.model.Beneficiary;
 import nonprofit.repository.DataStore;
 
-/**
- * Business logic for beneficiaries.
- *
- * TODO [PHASE 2 - Person C] resource distribution tracking + impact reports.
- */
+/** Beneficiary operations. */
 public class BeneficiaryService {
     private DataStore db = DataStore.getInstance();
 
@@ -27,7 +23,7 @@ public class BeneficiaryService {
         if (name != null && !name.isEmpty())    b.setName(name);
         if (contact != null && !contact.isEmpty()) b.setContact(contact);
         if (need != null && !need.isEmpty())    b.setNeed(need);
-        return true;
+        return db.beneficiaries.save(b);
     }
 
     public boolean delete(int id) { return db.beneficiaries.remove(id); }

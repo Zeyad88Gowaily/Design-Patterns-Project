@@ -15,10 +15,14 @@ import nonprofit.view.AuthenticationDialog;
 import nonprofit.view.ConsoleAuthenticationDialog;
 import nonprofit.view.ConsoleView;
 import nonprofit.view.ControlPanelView;
+import nonprofit.view.Theme;
 
 public class Main {
     public static void main(String[] args) {
         boolean headless = java.awt.GraphicsEnvironment.isHeadless();
+        if (!headless) {
+            Theme.install();
+        }
         final SupabaseConfig config;
         final SupabaseRestClient client;
         try {
@@ -30,7 +34,8 @@ public class Main {
         }
 
         SupabaseAuthService authService = new SupabaseAuthService(client);
-        boolean guiMode = args.length > 0 && args[0].equalsIgnoreCase("--gui");
+        // The Swing window is the default; --console starts the text menu instead.
+        boolean guiMode = !(args.length > 0 && args[0].equalsIgnoreCase("--console"));
         if (headless) {
             if (guiMode) {
                 System.err.println("The Swing interface requires a graphical desktop.");
@@ -80,11 +85,15 @@ public class Main {
         if (guiMode) {
             try {
                 ControlPanelView gui = new ControlPanelView(
+                        new DashboardPanelController(donationService, volunteerService, eventService,
+                                beneficiaryService),
                         new DonationPanelController(donationService),
                         new VolunteerPanelController(volunteerService),
                         new EventPanelController(eventService),
                         new BeneficiaryPanelController(beneficiaryService),
-                        new LookupPanelController(lookupService), () -> {
+                        new LookupPanelController(lookupService),
+                        new NotificationPanelController(donationService, volunteerService,
+                                beneficiaryService), () -> {
                             try {
                                 authService.signOut();
                             } catch (SupabaseException ex) {
@@ -95,9 +104,13 @@ public class Main {
                                     () -> startAuthenticatedSession(authService, client, true));
                         });
                 gui.setVisible(true);
-            } catch (SupabaseException ex) {
-                JOptionPane.showMessageDialog(null, ex.getMessage(), "Could not load application data",
+            } catch (RuntimeException ex) {
+                // Show what went wrong and go back to the sign-in window instead of closing the app.
+                ex.printStackTrace();
+                String message = ex instanceof SupabaseException ? ex.getMessage() : ex.toString();
+                JOptionPane.showMessageDialog(null, message, "Could not open the application",
                         JOptionPane.ERROR_MESSAGE);
+                startAuthenticatedSession(authService, client, true);
             }
             return;
         }

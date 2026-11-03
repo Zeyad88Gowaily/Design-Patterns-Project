@@ -1,6 +1,9 @@
 package nonprofit.communication;
 
-/** STRATEGY: how a message is delivered. Swap at runtime in Notifier. */
+/** Strategy: one way of delivering a message. */
 public interface NotificationStrategy {
     void send(String to, String message);
+
+    /** The message as one line of text; the Notifications tab shows this in its log. */
+    String format(String to, String message);
 }

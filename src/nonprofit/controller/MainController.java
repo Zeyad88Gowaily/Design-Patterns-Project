@@ -1,15 +1,9 @@
 package nonprofit.controller;
 
+import nonprofit.repository.SupabaseException;
 import nonprofit.view.ConsoleView;
 
-/**
- * MVC - main menu. Every module controller is plugged in here.
- *
- * TODO [PHASE 2 - Person C] FACADE: replace the individual services with one
- * NonProfitFacade.
- * TODO [PHASE 2 - Person C] ADMIN PAGES: login + admin-only screens (lookup
- * tables, reports).
- */
+/** Console main menu. */
 public class MainController {
     private ConsoleView view;
     private DonationController donations;
@@ -38,16 +32,21 @@ public class MainController {
                 view.show("Bye.");
                 return;
             }
-            if (choice == 1)
-                donations.menu();
-            else if (choice == 2)
-                volunteers.menu();
-            else if (choice == 3)
-                events.menu();
-            else if (choice == 4)
-                beneficiaries.menu();
-            else if (choice == 5)
-                lookups.menu();
+            try {
+                if (choice == 1)
+                    donations.menu();
+                else if (choice == 2)
+                    volunteers.menu();
+                else if (choice == 3)
+                    events.menu();
+                else if (choice == 4)
+                    beneficiaries.menu();
+                else if (choice == 5)
+                    lookups.menu();
+            } catch (SupabaseException | IllegalArgumentException | IllegalStateException ex) {
+                // Show the error and return to the menu instead of ending the session.
+                view.show("Error: " + ex.getMessage());
+            }
         }
     }
 }

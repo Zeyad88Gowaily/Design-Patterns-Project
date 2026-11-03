@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import nonprofit.model.Donation;
 import nonprofit.model.Event;
 import nonprofit.model.InKindDonation;
-import nonprofit.model.Volunteer;
 
 class EntityJsonCodecTest {
     @Test

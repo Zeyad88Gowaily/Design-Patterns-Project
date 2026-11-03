@@ -2,15 +2,7 @@ package nonprofit.model;
 
 import java.time.LocalDate;
 
-/**
- * A donation. Concrete types (online, check, in-kind) are created by DonationFactory.
- *
- * DECORATOR pattern: implements DonationInfo so it can be wrapped by decorators
- * (GiftAidDecorator, MatchingFundDecorator, RecurringDecorator) that modify the
- * effective amount and description.
- *
- * TODO [PHASE 2 - Person A] TEMPLATE METHOD: receipt / tax document generation.
- */
+/** Base class for donations. Implements DonationInfo so decorators can wrap it. */
 public abstract class Donation extends Entity implements DonationInfo {
     protected Donor donor;
     protected double amount;

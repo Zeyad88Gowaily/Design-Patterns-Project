@@ -1,36 +1,38 @@
 package nonprofit.service;
 
-import java.util.List;
 
 import nonprofit.model.*;
 import nonprofit.repository.DataStore;
 
-/**
- * FACTORY: builds the right Donation subclass from the type string.
- * Validates the type against the DONATION_TYPE lookup table in DataStore.
- */
+/** Factory: creates the Donation subclass that matches a type from the DONATION_TYPE lookup table. */
 public class DonationFactory {
     public static Donation create(String type, Donor donor, double amount, String detail) {
-        // Validate type exists in the lookup table
-        boolean valid = false;
-        for (LookupItem item : DataStore.getInstance().lookups.getAll()) {
-            if ("DONATION_TYPE".equals(item.getCategory())
-                    && item.getName().equalsIgnoreCase(type)) {
-                valid = true;
-                break;
-            }
+        String key = normalize(type);
+        if (!isConfiguredType(key)) {
+            throw new IllegalArgumentException("Unknown donation type '" + type
+                    + "'. Add it to the DONATION_TYPE lookup table first.");
         }
-        if (!valid) {
-            System.out.println("[DonationFactory] Warning: '" + type
-                    + "' not in lookup table, defaulting to Online.");
-        }
-
-        if ("check".equalsIgnoreCase(type)) {
+        if ("check".equals(key)) {
             return new CheckDonation(donor, amount);
         }
-        if ("inkind".equalsIgnoreCase(type) || "in-kind".equalsIgnoreCase(type)) {
+        if ("inkind".equals(key)) {
             return new InKindDonation(donor, amount, detail);
         }
-        return new OnlineDonation(donor, amount);   // default
+        return new OnlineDonation(donor, amount);
+    }
+
+    /** Lower-cases and strips punctuation, so "In-Kind" and "inkind" match. */
+    private static String normalize(String type) {
+        return type == null ? "" : type.replaceAll("[^A-Za-z]", "").toLowerCase();
+    }
+
+    /** True if the DONATION_TYPE lookup table contains the type. */
+    private static boolean isConfiguredType(String key) {
+        for (LookupItem item : DataStore.getInstance().lookups.getAll()) {
+            if ("DONATION_TYPE".equals(item.getCategory()) && normalize(item.getName()).equals(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

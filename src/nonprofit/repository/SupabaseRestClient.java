@@ -243,7 +243,7 @@ public class SupabaseRestClient {
                 }
             }
         } catch (RuntimeException ignored) {
-            // Return the HTTP status when Supabase does not return a JSON error.
+            // The body was not JSON; fall back to the status code below.
         }
         return "Supabase request failed with HTTP status " + status + ".";
     }

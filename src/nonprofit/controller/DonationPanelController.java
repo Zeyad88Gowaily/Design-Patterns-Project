@@ -26,8 +26,29 @@ public class DonationPanelController {
         return service.getDonorById(id);
     }
 
+    public boolean updateDonor(int id, String name, String email, String phone, String channel) {
+        return service.updateDonor(id, name, email, phone, channel);
+    }
+
+    public boolean deleteDonor(int id) {
+        return service.deleteDonor(id);
+    }
+
     public Donation donate(Donor donor, String type, double amount, String detail) {
         return service.donate(donor, type, amount, detail);
+    }
+
+    public Donation donate(Donor donor, String type, double amount, String detail,
+                           boolean giftAid, boolean matching, int recurringMonths) {
+        return service.donate(donor, type, amount, detail, giftAid, matching, recurringMonths);
+    }
+
+    public boolean deleteDonation(int id) {
+        return service.deleteDonation(id);
+    }
+
+    public List<String> getDonationTypes() {
+        return service.getDonationTypes();
     }
 
     public List<Donation> getDonations() {

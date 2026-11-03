@@ -7,7 +7,7 @@ import nonprofit.model.Volunteer;
 import nonprofit.service.VolunteerService;
 import nonprofit.view.ConsoleView;
 
-/** MVC - Controller for volunteers (Person B). */
+/** Console menu for volunteers. */
 public class VolunteerController {
     private VolunteerService service;
     private ConsoleView view;
