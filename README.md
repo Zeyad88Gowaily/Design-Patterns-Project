@@ -47,11 +47,13 @@ Flow: view -> controller -> service -> `DataStore` -> repository -> Supabase.
 
 ## Class diagrams
 
-Three diagrams in `docs/diagrams/` cover Phase 1:
+`docs/diagrams/class-diagram-full.png` (also `.svg`, zoomable) is the complete, connected Phase 1 diagram:
+every class from the view down to the Supabase tables.
+
+Three smaller diagrams show one part each:
 
 - `class-diagram-domain.png`: entities, donation types and the Decorator add-ons
 - `class-diagram-patterns.png`: Observer, Strategy and Factory
 - `class-diagram-layers.png`: MVC layers, the Singleton `DataStore` and persistence
 
-`database-tables.png` shows the Supabase tables. `class-diagram-full.puml` is the complete diagram with
-every class (too large to read as one picture). Each `.puml` file is the source of its picture.
+`database-tables.png` shows the Supabase tables. Each `.puml` file is the source of its picture.
