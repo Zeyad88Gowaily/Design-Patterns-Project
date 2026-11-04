@@ -1,60 +1,93 @@
 @startuml
+title MissionOS - Supabase tables (Phase 1)
 skinparam shadowing false
 skinparam defaultFontName Calibri
-skinparam defaultFontSize 12
-skinparam nodesep 25
-skinparam ranksep 35
-skinparam ClassBackgroundColor #EAF3FB
-skinparam ClassBorderColor #1F4E79
-skinparam ArrowColor #1F4E79
+skinparam defaultFontSize 13
+skinparam classAttributeIconSize 0
+skinparam roundCorner 6
+skinparam nodesep 55
+skinparam ranksep 110
+skinparam linetype ortho
+skinparam ArrowColor #44546A
+skinparam ClassBorderColor #44546A
+skinparam LegendBackgroundColor #FFFFFF
+skinparam LegendBorderColor #8497B0
 hide circle
-entity donors {
-  *id : integer
+hide empty members
+
+legend top right
+  |= Colour |= Layer |
+  | <back:#DDEBF7>   View   </back> | Swing / console screens |
+  | <back:#E2F0D9>   Controller   </back> | MVC controllers |
+  | <back:#FFF2CC>   Service   </back> | business rules |
+  | <back:#FCE4D6>   Patterns   </back> | Observer, Strategy, Factory |
+  | <back:#EDEDED>   Persistence   </back> | Singleton, repositories, Supabase client |
+  | <back:#D9D2E9>   Model   </back> | entities, Decorator |
+  | <back:#C6E0B4>   Supabase   </back> | hosted database |
+endlegend
+
+class "Supabase project" as Supabase <<Database>> #C6E0B4 {
+  Auth: email + password
+  PostgREST over HTTPS (anon key)
+  Row level security
+}
+class "donors" as T_donors <<table>> #E2F0D9 {
+  id : integer PK
   data : jsonb
 }
-entity donations {
-  *id : integer
-  donor_id : integer (FK)
+class "donations" as T_donations <<table>> #E2F0D9 {
+  id : integer PK
+  donor_id : integer FK
   data : jsonb
 }
-entity volunteers {
-  *id : integer
+class "volunteers" as T_volunteers <<table>> #E2F0D9 {
+  id : integer PK
   data : jsonb
 }
-entity events {
-  *id : integer
+class "events" as T_events <<table>> #E2F0D9 {
+  id : integer PK
   data : jsonb
 }
-entity event_volunteers {
-  *id : integer
-  event_id : integer (FK)
-  volunteer_id : integer (FK)
+class "event_volunteers" as T_event_volunteers <<table>> #E2F0D9 {
+  id : integer PK
+  event_id : integer FK
+  volunteer_id : integer FK
 }
-entity registrations {
-  *id : integer
-  event_id : integer (FK)
-  volunteer_id : integer (FK)
+class "registrations" as T_registrations <<table>> #E2F0D9 {
+  id : integer PK
+  event_id : integer FK
+  volunteer_id : integer FK
   data : jsonb
 }
-entity tickets {
-  *id : integer
-  event_id : integer (FK)
-  volunteer_id : integer (FK)
+class "tickets" as T_tickets <<table>> #E2F0D9 {
+  id : integer PK
+  event_id : integer FK
+  volunteer_id : integer FK
   data : jsonb
 }
-entity beneficiaries {
-  *id : integer
+class "beneficiaries" as T_beneficiaries <<table>> #E2F0D9 {
+  id : integer PK
   data : jsonb
 }
-entity lookups {
-  *id : integer
+class "lookups" as T_lookups <<table>> #E2F0D9 {
+  id : integer PK
   data : jsonb
 }
-donors ||--o{ donations
-events ||--o{ event_volunteers
-volunteers ||--o{ event_volunteers
-events ||--o{ registrations
-volunteers ||--o{ registrations
-events ||--o{ tickets
-volunteers ||--o{ tickets
+
+Supabase *-- T_donors
+Supabase *-- T_donations
+Supabase *-- T_volunteers
+Supabase *-- T_events
+Supabase *-- T_event_volunteers
+Supabase *-- T_registrations
+Supabase *-- T_tickets
+Supabase *-- T_beneficiaries
+Supabase *-- T_lookups
+T_donations "*" --> "1" T_donors
+T_event_volunteers "*" --> "1" T_events
+T_event_volunteers "*" --> "1" T_volunteers
+T_registrations "*" --> "1" T_events
+T_registrations "*" --> "1" T_volunteers
+T_tickets "*" --> "1" T_events
+T_tickets "*" --> "1" T_volunteers
 @enduml

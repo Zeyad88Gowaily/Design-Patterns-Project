@@ -39,7 +39,7 @@ src/nonprofit/
   controller/     console and Swing controllers
   view/           console view, control panel, login dialogs
 database/         Supabase schema and seed data
-docs/             requirements, CRUD matrix, phase 1 checklist, class diagrams
+docs/             requirements, SRS, class diagrams
 test/             JUnit tests
 ```
 

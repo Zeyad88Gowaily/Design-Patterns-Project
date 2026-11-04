@@ -2,104 +2,110 @@
 title MissionOS - Domain Model (Phase 1)
 skinparam shadowing false
 skinparam defaultFontName Calibri
-skinparam defaultFontSize 12
+skinparam defaultFontSize 13
 skinparam classAttributeIconSize 0
 skinparam roundCorner 6
-skinparam nodesep 24
-skinparam ranksep 40
-skinparam packageStyle rectangle
+skinparam nodesep 55
+skinparam ranksep 110
+skinparam linetype ortho
 skinparam ArrowColor #44546A
 skinparam ClassBorderColor #44546A
-skinparam ClassBackgroundColor #FFFFFF
-skinparam ClassHeaderBackgroundColor #E9EEF5
-skinparam PackageBorderColor #8497B0
-skinparam PackageBackgroundColor #FAFBFD
-skinparam PackageFontStyle bold
-skinparam NoteBackgroundColor #FFF8E1
-skinparam NoteBorderColor #BF9000
+skinparam LegendBackgroundColor #FFFFFF
+skinparam LegendBorderColor #8497B0
 hide circle
 hide empty members
-left to right direction
-package "Donations" {
-  class Donor {
-    - name : String
-    - email : String
-    - phone : String
-    - notificationChannel : String
-  }
-  abstract class Donation {
-    - amount : double
-    - date : LocalDate
-    + getType() : String
-  }
-  class OnlineDonation
-  class CheckDonation
-  class InKindDonation {
-    - item : String
-  }
-  interface DonationInfo <<Decorator>> {
-    + getAmount() : double
-    + describe() : String
-  }
-  abstract class DonationDecorator
-  class GiftAidDecorator
-  class MatchingFundDecorator
-  class RecurringDecorator {
-    - months : int
-  }
+
+legend top right
+  |= Colour |= Layer |
+  | <back:#DDEBF7>   View   </back> | Swing / console screens |
+  | <back:#E2F0D9>   Controller   </back> | MVC controllers |
+  | <back:#FFF2CC>   Service   </back> | business rules |
+  | <back:#FCE4D6>   Patterns   </back> | Observer, Strategy, Factory |
+  | <back:#EDEDED>   Persistence   </back> | Singleton, repositories, Supabase client |
+  | <back:#D9D2E9>   Model   </back> | entities, Decorator |
+  | <back:#C6E0B4>   Supabase   </back> | hosted database |
+endlegend
+
+abstract class Entity #D9D2E9 {
+  # id : int
 }
-package "Volunteers and events" {
-  class Volunteer {
-    - name : String
-    - email : String
-    - skills : List<String>
-    - availability : List<String>
-    - hours : double
-  }
-  class Event {
-    - name : String
-    - date : String
-    - location : String
-    - eventType : String
-    - status : String
-    - requiredSkills : List<String>
-  }
-  class Registration {
-    - registrationDate : String
-  }
-  class Ticket {
-    - ticketNumber : String
-    - checkedIn : boolean
-    + checkIn()
-  }
+class Donor #D9D2E9 {
+  - name, email, phone : String
+  - notificationChannel : String
 }
-package "Beneficiaries and lookups" {
-  class Beneficiary {
-    - name : String
-    - contact : String
-    - need : String
-  }
-  class LookupItem {
-    - name : String
-    - category : String
-  }
+abstract class Donation #D9D2E9 {
+  # donor : Donor
+  # amount : double
+  # date : LocalDate
+  + {abstract} getType() : String
 }
+interface DonationInfo #D9D2E9 {
+  + getAmount() : double
+  + describe() : String
+}
+class OnlineDonation #D9D2E9
+class CheckDonation #D9D2E9
+class InKindDonation #D9D2E9 {
+  - item : String
+}
+abstract class DonationDecorator <<Decorator>> #D9D2E9 {
+  # wrapped : DonationInfo
+}
+class GiftAidDecorator #D9D2E9 {
+  amount x 1.25
+}
+class MatchingFundDecorator #D9D2E9 {
+  amount x 2
+}
+class RecurringDecorator #D9D2E9 {
+  - months : int
+}
+class Volunteer #D9D2E9 {
+  - name, email : String
+  - skills, availability : List
+  - hours : double
+}
+class Event #D9D2E9 {
+  - name, date, location : String
+  - eventType, status : String
+  - requiredSkills : List
+}
+class Registration #D9D2E9 {
+  - volunteerId, eventId : int
+  - registrationDate : String
+}
+class Ticket #D9D2E9 {
+  - ticketNumber : String
+  - checkedIn : boolean
+}
+class Beneficiary #D9D2E9 {
+  - name, contact, need : String
+}
+class LookupItem #D9D2E9 {
+  - name, category : String
+}
+
+Entity <|-- Donor
+Entity <|-- Donation
+Entity <|-- Volunteer
+Entity <|-- Event
+Entity <|-- Registration
+Entity <|-- Ticket
+Entity <|-- Beneficiary
+Entity <|-- LookupItem
+Donation ..|> DonationInfo
 Donation <|-- OnlineDonation
 Donation <|-- CheckDonation
 Donation <|-- InKindDonation
-DonationInfo <|.. Donation
 DonationInfo <|.. DonationDecorator
-DonationDecorator o--> DonationInfo : wraps
+DonationDecorator o-- DonationInfo : wraps
 DonationDecorator <|-- GiftAidDecorator
 DonationDecorator <|-- MatchingFundDecorator
 DonationDecorator <|-- RecurringDecorator
-Donation "*" --> "1" Donor : made by
-Event "*" -- "*" Volunteer : assigned
+Donation "0..*" --> "1" Donor
+Event "0..*" -- "0..*" Volunteer
 Registration "*" --> "1" Event
 Registration "*" --> "1" Volunteer
 Ticket "*" --> "1" Event
 Ticket "*" --> "1" Volunteer
-legend bottom
-  Every entity also has an integer id (base class Entity, not drawn).
-endlegend
 @enduml

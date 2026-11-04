@@ -1,63 +1,101 @@
 @startuml
-title MissionOS - Design Patterns: Observer, Strategy and Factory
+title MissionOS - Observer, Strategy and Factory (Phase 1)
 skinparam shadowing false
 skinparam defaultFontName Calibri
-skinparam defaultFontSize 12
+skinparam defaultFontSize 13
 skinparam classAttributeIconSize 0
 skinparam roundCorner 6
-skinparam nodesep 26
-skinparam ranksep 42
-skinparam packageStyle rectangle
+skinparam nodesep 55
+skinparam ranksep 110
+skinparam linetype ortho
 skinparam ArrowColor #44546A
 skinparam ClassBorderColor #44546A
-skinparam ClassBackgroundColor #FFFFFF
-skinparam ClassHeaderBackgroundColor #E9EEF5
-skinparam PackageBorderColor #8497B0
-skinparam PackageBackgroundColor #FAFBFD
-skinparam PackageFontStyle bold
-skinparam LegendBackgroundColor #FFF8E1
-skinparam LegendBorderColor #BF9000
+skinparam LegendBackgroundColor #FFFFFF
+skinparam LegendBorderColor #8497B0
 hide circle
 hide empty members
-class DonationService
-class EventService
-class DonationFactory <<Factory>> {
-  + {static} create(type, donor, amount, detail) : Donation
+left to right direction
+
+legend top right
+  |= Colour |= Layer |
+  | <back:#DDEBF7>   View   </back> | Swing / console screens |
+  | <back:#E2F0D9>   Controller   </back> | MVC controllers |
+  | <back:#FFF2CC>   Service   </back> | business rules |
+  | <back:#FCE4D6>   Patterns   </back> | Observer, Strategy, Factory |
+  | <back:#EDEDED>   Persistence   </back> | Singleton, repositories, Supabase client |
+  | <back:#D9D2E9>   Model   </back> | entities, Decorator |
+  | <back:#C6E0B4>   Supabase   </back> | hosted database |
+endlegend
+
+class DonationService <<Subject>> #FFF2CC {
+  + addDonor(name, email, phone, channel) : Donor
+  + donate(donor, type, amount, detail,\n   giftAid, matching, months) : Donation
+  + applyDecorators(donation, giftAid,\n   matching, months) : DonationInfo
 }
-class Subject <<Observer pattern>> {
-  + attach(o : Observer)
-  + detach(o : Observer)
-  # notifyObservers(type, data)
+class EventService <<Subject>> #FFF2CC {
+  + create(name, date, location, type, skills) : Event
+  + assignVolunteer(eventId, volunteerId)
+  + suggestVolunteers(eventId) : List
+  + register(eventId, volunteerId) : Registration
+  + issueTicket(eventId, volunteerId) : Ticket
+  + markAttendance(ticketId) : boolean
 }
-interface Observer {
-  + update(type, data)
+class DonationFactory <<Factory>> #FCE4D6 {
+  + {static} create(type, donor,\n   amount, detail) : Donation
 }
-class DonationReceiptObserver
-class EventUpdateObserver
-class Notifier <<Strategy context>> {
-  + setStrategy(s : NotificationStrategy)
+class Subject <<Observer pattern>> #FCE4D6 {
+  - observers : List<Observer>
+  + attach(observer)
+  + detach(observer)
+  # notifyObservers(eventType, data)
+}
+interface Observer #FCE4D6 {
+  + update(eventType, data)
+}
+class DonationReceiptObserver #FCE4D6
+class EventUpdateObserver #FCE4D6
+class Notifier <<Strategy context>> #FCE4D6 {
+  - strategy : NotificationStrategy
+  + setStrategy(strategy)
   + notify(to, message)
 }
-interface NotificationStrategy <<Strategy>> {
+interface NotificationStrategy <<Strategy>> #FCE4D6 {
   + send(to, message)
+  + format(to, message) : String
 }
-class EmailStrategy
-class SmsStrategy
-class SocialMediaStrategy
-class NotificationFactory <<Factory>> {
-  + {static} create(channel) : NotificationStrategy
+class EmailStrategy #FCE4D6
+class SmsStrategy #FCE4D6
+class SocialMediaStrategy #FCE4D6
+class NotificationFactory <<Factory>> #FCE4D6 {
+  + {static} create(type) : NotificationStrategy
 }
-DonationService --|> Subject
-EventService --|> Subject
-DonationService ..> DonationFactory : uses
-Subject o--> "*" Observer
+abstract class Donation #D9D2E9 {
+  # donor : Donor
+  # amount : double
+  # date : LocalDate
+  + {abstract} getType() : String
+}
+class Event #D9D2E9 {
+  - name, date, location : String
+  - eventType, status : String
+  - requiredSkills : List
+}
+
+DonationService --> DonationFactory
+DonationFactory --> Donation
+Subject <|-- DonationService
+Subject <|-- EventService
+Subject o-- Observer
 Observer <|.. DonationReceiptObserver
 Observer <|.. EventUpdateObserver
 DonationReceiptObserver --> Notifier
 EventUpdateObserver --> Notifier
-Notifier --> NotificationStrategy
+DonationReceiptObserver ..> Donation
+EventUpdateObserver ..> Event
+Notifier o-- NotificationStrategy
 NotificationStrategy <|.. EmailStrategy
 NotificationStrategy <|.. SmsStrategy
 NotificationStrategy <|.. SocialMediaStrategy
-NotificationFactory ..> NotificationStrategy : creates
+NotificationFactory ..> NotificationStrategy
+Notifier ..> NotificationFactory
 @enduml

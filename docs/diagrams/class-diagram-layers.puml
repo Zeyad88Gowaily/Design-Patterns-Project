@@ -1,74 +1,110 @@
 @startuml
-title MissionOS - Layers (MVC) and Persistence
+title MissionOS - Layers (MVC) and Persistence, shown for the Donations feature
 skinparam shadowing false
 skinparam defaultFontName Calibri
-skinparam defaultFontSize 12
+skinparam defaultFontSize 13
 skinparam classAttributeIconSize 0
 skinparam roundCorner 6
-skinparam nodesep 26
-skinparam ranksep 42
-skinparam packageStyle rectangle
+skinparam nodesep 55
+skinparam ranksep 110
+skinparam linetype ortho
 skinparam ArrowColor #44546A
 skinparam ClassBorderColor #44546A
-skinparam ClassBackgroundColor #FFFFFF
-skinparam ClassHeaderBackgroundColor #E9EEF5
-skinparam PackageBorderColor #8497B0
-skinparam PackageBackgroundColor #FAFBFD
-skinparam PackageFontStyle bold
-skinparam LegendBackgroundColor #FFF8E1
-skinparam LegendBorderColor #BF9000
+skinparam LegendBackgroundColor #FFFFFF
+skinparam LegendBorderColor #8497B0
 hide circle
 hide empty members
-package "View" {
-  class ControlPanelView
-  class ConsoleView
-  class "Tab panels" as Tabs <<7 classes>>
+left to right direction
+
+legend top right
+  |= Colour |= Layer |
+  | <back:#DDEBF7>   View   </back> | Swing / console screens |
+  | <back:#E2F0D9>   Controller   </back> | MVC controllers |
+  | <back:#FFF2CC>   Service   </back> | business rules |
+  | <back:#FCE4D6>   Patterns   </back> | Observer, Strategy, Factory |
+  | <back:#EDEDED>   Persistence   </back> | Singleton, repositories, Supabase client |
+  | <back:#D9D2E9>   Model   </back> | entities, Decorator |
+  | <back:#C6E0B4>   Supabase   </back> | hosted database |
+endlegend
+
+class Main #DDEBF7
+class ControlPanelView #DDEBF7
+abstract class TabPanel #DDEBF7 {
+  # newModel(columns)
+  # selectedId(table, what)
+  # confirmDelete(what)
 }
-package "Controller" {
-  class "Panel controllers" as PC <<6 classes>>
-  class "Console controllers" as CC <<6 classes>>
+class DonationsPanel #DDEBF7
+class ConsoleView #DDEBF7
+class MainController #E2F0D9
+class DonationPanelController #E2F0D9
+class DonationController #E2F0D9
+class DonationService <<Subject>> #FFF2CC {
+  + addDonor(name, email, phone, channel) : Donor
+  + donate(donor, type, amount, detail,\n   giftAid, matching, months) : Donation
+  + applyDecorators(donation, giftAid,\n   matching, months) : DonationInfo
 }
-package "Service" {
-  class DonationService
-  class VolunteerService
-  class EventService
-  class BeneficiaryService
-  class LookupService
+class DataStore <<Singleton>> #EDEDED {
+  - {static} instance : DataStore
+  + donors, donations, volunteers, events,\n   beneficiaries, lookups,\n   registrations, tickets : Repository<T>
+  + {static} configure(client)
+  + {static} getInstance() : DataStore
 }
-package "Persistence" {
-  class DataStore <<Singleton>> {
-    - {static} instance : DataStore
-    + {static} getInstance() : DataStore
-  }
-  interface "Repository<T>" as Repository {
-    + add(item) : T
-    + getById(id) : T
-    + getAll() : List<T>
-    + save(item) : boolean
-    + remove(id) : boolean
-  }
-  class "SupabaseRepository<T>" as SupabaseRepository
-  class SupabaseRestClient
+interface "Repository<T>" as Repository #EDEDED {
+  + add(item) : T
+  + getById(id) : T
+  + getAll() : List<T>
+  + save(item) : boolean
+  + remove(id) : boolean
 }
-ControlPanelView *--> Tabs
-Tabs --> PC
-CC --> ConsoleView
-PC --> DonationService
-PC --> VolunteerService
-PC --> EventService
-PC --> BeneficiaryService
-PC --> LookupService
-CC --> DonationService
-CC --> VolunteerService
-CC --> EventService
-CC --> BeneficiaryService
-CC --> LookupService
+class "SupabaseRepository<T>" as SupabaseRepository #EDEDED {
+  - table : String
+}
+class DonationRepository #EDEDED
+class "EntityJsonCodec<T>" as EntityJsonCodec #EDEDED {
+  + toJson(entity) : JsonObject
+  + fromJson(json, id) : T
+}
+class SupabaseConfig #EDEDED {
+  - url : String
+  - apiKey : String
+  + {static} fromEnvironment()
+}
+class SupabaseRestClient #EDEDED {
+  + authPost(path, body)
+  + selectAll(table)
+  + insert(table, row)
+  + update(table, id, row)
+  + delete(table, filter)
+}
+class SupabaseException #EDEDED
+class "Supabase project" as Supabase <<Database>> #C6E0B4 {
+  Auth: email + password
+  PostgREST over HTTPS (anon key)
+  Row level security
+}
+abstract class Entity #D9D2E9 {
+  # id : int
+}
+
+Main --> ControlPanelView : GUI
+Main --> MainController : --console
+SupabaseConfig --> SupabaseRestClient
+ControlPanelView "1" *-- "7" TabPanel : tabs
+TabPanel <|-- DonationsPanel
+DonationsPanel --> DonationPanelController
+MainController --> ConsoleView
+MainController --> DonationController
+DonationPanelController --> DonationService
+DonationController --> DonationService
 DonationService --> DataStore
-VolunteerService --> DataStore
-EventService --> DataStore
-BeneficiaryService --> DataStore
-LookupService --> DataStore
-DataStore o--> "8" Repository
+DataStore "1" o-- "8" Repository
 Repository <|.. SupabaseRepository
+SupabaseRepository <|-- DonationRepository
 SupabaseRepository --> SupabaseRestClient
+SupabaseRepository --> EntityJsonCodec
+SupabaseRestClient ..> SupabaseException
+SupabaseRestClient --> Supabase : HTTPS
+Repository ..> Entity
+EntityJsonCodec ..> Entity
 @enduml
