@@ -1,0 +1,396 @@
+@startuml
+title MissionOS - Phase 1 Class Diagram (data stored in Supabase)
+skinparam shadowing false
+skinparam defaultFontName Calibri
+skinparam defaultFontSize 13
+skinparam classAttributeIconSize 0
+skinparam roundCorner 6
+skinparam nodesep 55
+skinparam ranksep 110
+skinparam linetype ortho
+skinparam ArrowColor #44546A
+skinparam ClassBorderColor #44546A
+skinparam LegendBackgroundColor #FFFFFF
+skinparam LegendBorderColor #8497B0
+hide circle
+hide empty members
+
+legend top right
+  |= Colour |= Layer |
+  | <back:#DDEBF7>   View   </back> | Swing / console screens |
+  | <back:#E2F0D9>   Controller   </back> | MVC controllers |
+  | <back:#FFF2CC>   Service   </back> | business rules |
+  | <back:#FCE4D6>   Patterns   </back> | Observer, Strategy, Factory |
+  | <back:#EDEDED>   Persistence   </back> | Singleton, repositories, Supabase client |
+  | <back:#D9D2E9>   Model   </back> | entities, Decorator |
+  | <back:#C6E0B4>   Supabase   </back> | hosted database |
+endlegend
+
+' ------------------------------------------------------------ VIEW
+class Main #DDEBF7
+class ControlPanelView #DDEBF7
+abstract class TabPanel #DDEBF7 {
+  # newModel(columns)
+  # selectedId(table, what)
+  # confirmDelete(what)
+}
+class DashboardPanel #DDEBF7
+class DonationsPanel #DDEBF7
+class VolunteersPanel #DDEBF7
+class EventsPanel #DDEBF7
+class BeneficiariesPanel #DDEBF7
+class NotificationsPanel #DDEBF7
+class LookupPanel #DDEBF7
+class AuthenticationDialog #DDEBF7
+class ConsoleAuthenticationDialog #DDEBF7
+class ConsoleView #DDEBF7
+class Theme #DDEBF7
+class Ui #DDEBF7
+
+' ------------------------------------------------------- CONTROLLER
+class MainController #E2F0D9
+class DashboardPanelController #E2F0D9 {
+  + getStats() : Map
+  + getRecentDonations(limit) : List
+}
+class DonationPanelController #E2F0D9
+class VolunteerPanelController #E2F0D9
+class EventPanelController #E2F0D9
+class BeneficiaryPanelController #E2F0D9
+class LookupPanelController #E2F0D9
+class NotificationPanelController #E2F0D9 {
+  + send(audience, recipient,\n   channel, message) : List
+}
+class DonationController #E2F0D9
+class VolunteerController #E2F0D9
+class EventController #E2F0D9
+class BeneficiaryController #E2F0D9
+class LookupController #E2F0D9
+
+' --------------------------------------------------------- SERVICE
+class DonationService <<Subject>> #FFF2CC {
+  + addDonor(name, email, phone, channel) : Donor
+  + donate(donor, type, amount, detail,\n   giftAid, matching, months) : Donation
+  + applyDecorators(donation, giftAid,\n   matching, months) : DonationInfo
+}
+class VolunteerService #FFF2CC {
+  + add(name, email, skill) : Volunteer
+  + matchBySkill(skill) : List
+  + matchByAvailability(day) : List
+}
+class EventService <<Subject>> #FFF2CC {
+  + create(name, date, location, type, skills) : Event
+  + assignVolunteer(eventId, volunteerId)
+  + suggestVolunteers(eventId) : List
+  + register(eventId, volunteerId) : Registration
+  + issueTicket(eventId, volunteerId) : Ticket
+  + markAttendance(ticketId) : boolean
+}
+class BeneficiaryService #FFF2CC {
+  + add(name, contact, need) : Beneficiary
+  + update(id, name, contact, need)
+}
+class LookupService #FFF2CC {
+  + add(name, category) : LookupItem
+  + getByCategory(category) : List
+}
+class SupabaseAuthService #FFF2CC {
+  + signIn(email, password) : AuthSession
+  + signUp(email, password) : AuthSession
+  + signOut()
+}
+class AuthSession #FFF2CC {
+  - accessToken : String
+  - refreshToken : String
+}
+
+' -------------------------------------------------------- PATTERNS
+class Subject <<Observer pattern>> #FCE4D6 {
+  - observers : List<Observer>
+  + attach(observer)
+  + detach(observer)
+  # notifyObservers(eventType, data)
+}
+interface Observer #FCE4D6 {
+  + update(eventType, data)
+}
+class DonationReceiptObserver #FCE4D6
+class EventUpdateObserver #FCE4D6
+class Notifier <<Strategy context>> #FCE4D6 {
+  - strategy : NotificationStrategy
+  + setStrategy(strategy)
+  + notify(to, message)
+}
+interface NotificationStrategy <<Strategy>> #FCE4D6 {
+  + send(to, message)
+  + format(to, message) : String
+}
+class EmailStrategy #FCE4D6
+class SmsStrategy #FCE4D6
+class SocialMediaStrategy #FCE4D6
+class NotificationFactory <<Factory>> #FCE4D6 {
+  + {static} create(type) : NotificationStrategy
+}
+class DonationFactory <<Factory>> #FCE4D6 {
+  + {static} create(type, donor,\n   amount, detail) : Donation
+}
+
+' ----------------------------------------------------- PERSISTENCE
+class DataStore <<Singleton>> #EDEDED {
+  - {static} instance : DataStore
+  + donors, donations, volunteers, events,\n   beneficiaries, lookups,\n   registrations, tickets : Repository<T>
+  + {static} configure(client)
+  + {static} getInstance() : DataStore
+}
+interface "Repository<T>" as Repository #EDEDED {
+  + add(item) : T
+  + getById(id) : T
+  + getAll() : List<T>
+  + save(item) : boolean
+  + remove(id) : boolean
+}
+class "SupabaseRepository<T>" as SupabaseRepository #EDEDED {
+  - table : String
+}
+class DonationRepository #EDEDED
+class EventRepository #EDEDED
+class "EntityJsonCodec<T>" as EntityJsonCodec #EDEDED {
+  + toJson(entity) : JsonObject
+  + fromJson(json, id) : T
+}
+class SupabaseConfig #EDEDED {
+  - url : String
+  - apiKey : String
+  + {static} fromEnvironment()
+}
+class SupabaseRestClient #EDEDED {
+  + authPost(path, body)
+  + selectAll(table)
+  + insert(table, row)
+  + update(table, id, row)
+  + delete(table, filter)
+}
+class SupabaseException #EDEDED
+
+' ------------------------------------------------------- SUPABASE
+class "Supabase project" as Supabase <<Database>> #C6E0B4 {
+  Auth: email + password
+  PostgREST over HTTPS (anon key)
+  Row level security
+}
+class "donors" as T_donors <<table>> #E2F0D9
+class "donations" as T_donations <<table>> #E2F0D9 {
+  donor_id FK
+}
+class "volunteers" as T_volunteers <<table>> #E2F0D9
+class "events" as T_events <<table>> #E2F0D9
+class "event_volunteers" as T_event_volunteers <<table>> #E2F0D9 {
+  event_id FK
+  volunteer_id FK
+}
+class "registrations" as T_registrations <<table>> #E2F0D9 {
+  event_id FK
+  volunteer_id FK
+}
+class "tickets" as T_tickets <<table>> #E2F0D9 {
+  event_id FK
+  volunteer_id FK
+}
+class "beneficiaries" as T_beneficiaries <<table>> #E2F0D9
+class "lookups" as T_lookups <<table>> #E2F0D9
+
+' ----------------------------------------------------------- MODEL
+abstract class Entity #D9D2E9 {
+  # id : int
+}
+class Donor #D9D2E9 {
+  - name, email, phone : String
+  - notificationChannel : String
+}
+abstract class Donation #D9D2E9 {
+  # donor : Donor
+  # amount : double
+  # date : LocalDate
+  + {abstract} getType() : String
+}
+interface DonationInfo #D9D2E9 {
+  + getAmount() : double
+  + describe() : String
+}
+class OnlineDonation #D9D2E9
+class CheckDonation #D9D2E9
+class InKindDonation #D9D2E9 {
+  - item : String
+}
+abstract class DonationDecorator <<Decorator>> #D9D2E9 {
+  # wrapped : DonationInfo
+}
+class GiftAidDecorator #D9D2E9 {
+  amount x 1.25
+}
+class MatchingFundDecorator #D9D2E9 {
+  amount x 2
+}
+class RecurringDecorator #D9D2E9 {
+  - months : int
+}
+class Volunteer #D9D2E9 {
+  - name, email : String
+  - skills, availability : List
+  - hours : double
+}
+class Event #D9D2E9 {
+  - name, date, location : String
+  - eventType, status : String
+  - requiredSkills : List
+}
+class Registration #D9D2E9 {
+  - volunteerId, eventId : int
+  - registrationDate : String
+}
+class Ticket #D9D2E9 {
+  - ticketNumber : String
+  - checkedIn : boolean
+}
+class Beneficiary #D9D2E9 {
+  - name, contact, need : String
+}
+class LookupItem #D9D2E9 {
+  - name, category : String
+}
+
+' ============================================================ LINKS
+' start-up and sign-in
+Main --> ControlPanelView : GUI
+Main --> MainController : --console
+Main --> AuthenticationDialog
+Main --> ConsoleAuthenticationDialog
+AuthenticationDialog --> SupabaseAuthService
+ConsoleAuthenticationDialog --> SupabaseAuthService
+SupabaseAuthService --> SupabaseRestClient
+SupabaseAuthService +-- AuthSession
+SupabaseConfig --> SupabaseRestClient
+
+' view
+ControlPanelView "1" *-- "7" TabPanel : tabs
+TabPanel <|-- DashboardPanel
+TabPanel <|-- DonationsPanel
+TabPanel <|-- VolunteersPanel
+TabPanel <|-- EventsPanel
+TabPanel <|-- BeneficiariesPanel
+TabPanel <|-- NotificationsPanel
+TabPanel <|-- LookupPanel
+ControlPanelView ..> Theme
+TabPanel ..> Ui
+
+' MVC: view -> controller
+DashboardPanel --> DashboardPanelController
+DonationsPanel --> DonationPanelController
+VolunteersPanel --> VolunteerPanelController
+EventsPanel --> EventPanelController
+BeneficiariesPanel --> BeneficiaryPanelController
+NotificationsPanel --> NotificationPanelController
+LookupPanel --> LookupPanelController
+MainController --> ConsoleView
+MainController --> DonationController
+MainController --> VolunteerController
+MainController --> EventController
+MainController --> BeneficiaryController
+MainController --> LookupController
+
+' MVC: controller -> service
+DashboardPanelController --> DonationService
+DashboardPanelController --> VolunteerService
+DashboardPanelController --> EventService
+DashboardPanelController --> BeneficiaryService
+DonationPanelController --> DonationService
+VolunteerPanelController --> VolunteerService
+EventPanelController --> EventService
+BeneficiaryPanelController --> BeneficiaryService
+LookupPanelController --> LookupService
+NotificationPanelController --> DonationService
+NotificationPanelController --> VolunteerService
+NotificationPanelController --> BeneficiaryService
+NotificationPanelController --> Notifier
+DonationController --> DonationService
+VolunteerController --> VolunteerService
+EventController --> EventService
+BeneficiaryController --> BeneficiaryService
+LookupController --> LookupService
+
+' service -> persistence
+DonationService --> DataStore
+VolunteerService --> DataStore
+EventService --> DataStore
+BeneficiaryService --> DataStore
+LookupService --> DataStore
+DonationService --> DonationFactory
+DonationService --> DonationDecorator
+DonationFactory --> Donation
+
+' observer
+Subject <|-- DonationService
+Subject <|-- EventService
+Subject o-- Observer
+Observer <|.. DonationReceiptObserver
+Observer <|.. EventUpdateObserver
+DonationReceiptObserver --> Notifier
+EventUpdateObserver --> Notifier
+DonationReceiptObserver ..> Donation
+EventUpdateObserver ..> Event
+
+' strategy
+Notifier o-- NotificationStrategy
+NotificationStrategy <|.. EmailStrategy
+NotificationStrategy <|.. SmsStrategy
+NotificationStrategy <|.. SocialMediaStrategy
+NotificationFactory ..> NotificationStrategy
+Notifier ..> NotificationFactory
+
+' persistence -> Supabase
+DataStore "1" o-- "8" Repository
+Repository <|.. SupabaseRepository
+SupabaseRepository <|-- DonationRepository
+SupabaseRepository <|-- EventRepository
+SupabaseRepository --> SupabaseRestClient
+SupabaseRepository --> EntityJsonCodec
+SupabaseRestClient ..> SupabaseException
+SupabaseRestClient --> Supabase : HTTPS
+Repository ..> Entity
+EntityJsonCodec ..> Entity
+Supabase *-- T_donors
+Supabase *-- T_donations
+Supabase *-- T_volunteers
+Supabase *-- T_events
+Supabase *-- T_event_volunteers
+Supabase *-- T_registrations
+Supabase *-- T_tickets
+Supabase *-- T_beneficiaries
+Supabase *-- T_lookups
+
+' model
+Entity <|-- Donor
+Entity <|-- Donation
+Entity <|-- Volunteer
+Entity <|-- Event
+Entity <|-- Registration
+Entity <|-- Ticket
+Entity <|-- Beneficiary
+Entity <|-- LookupItem
+Donation ..|> DonationInfo
+Donation <|-- OnlineDonation
+Donation <|-- CheckDonation
+Donation <|-- InKindDonation
+DonationInfo <|.. DonationDecorator
+DonationDecorator o-- DonationInfo : wraps
+DonationDecorator <|-- GiftAidDecorator
+DonationDecorator <|-- MatchingFundDecorator
+DonationDecorator <|-- RecurringDecorator
+Donation "0..*" --> "1" Donor
+Event "0..*" -- "0..*" Volunteer
+Registration "*" --> "1" Event
+Registration "*" --> "1" Volunteer
+Ticket "*" --> "1" Event
+Ticket "*" --> "1" Volunteer
+
+@enduml

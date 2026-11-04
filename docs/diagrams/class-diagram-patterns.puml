@@ -1,0 +1,63 @@
+@startuml
+title MissionOS - Design Patterns: Observer, Strategy and Factory
+skinparam shadowing false
+skinparam defaultFontName Calibri
+skinparam defaultFontSize 12
+skinparam classAttributeIconSize 0
+skinparam roundCorner 6
+skinparam nodesep 26
+skinparam ranksep 42
+skinparam packageStyle rectangle
+skinparam ArrowColor #44546A
+skinparam ClassBorderColor #44546A
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassHeaderBackgroundColor #E9EEF5
+skinparam PackageBorderColor #8497B0
+skinparam PackageBackgroundColor #FAFBFD
+skinparam PackageFontStyle bold
+skinparam LegendBackgroundColor #FFF8E1
+skinparam LegendBorderColor #BF9000
+hide circle
+hide empty members
+class DonationService
+class EventService
+class DonationFactory <<Factory>> {
+  + {static} create(type, donor, amount, detail) : Donation
+}
+class Subject <<Observer pattern>> {
+  + attach(o : Observer)
+  + detach(o : Observer)
+  # notifyObservers(type, data)
+}
+interface Observer {
+  + update(type, data)
+}
+class DonationReceiptObserver
+class EventUpdateObserver
+class Notifier <<Strategy context>> {
+  + setStrategy(s : NotificationStrategy)
+  + notify(to, message)
+}
+interface NotificationStrategy <<Strategy>> {
+  + send(to, message)
+}
+class EmailStrategy
+class SmsStrategy
+class SocialMediaStrategy
+class NotificationFactory <<Factory>> {
+  + {static} create(channel) : NotificationStrategy
+}
+DonationService --|> Subject
+EventService --|> Subject
+DonationService ..> DonationFactory : uses
+Subject o--> "*" Observer
+Observer <|.. DonationReceiptObserver
+Observer <|.. EventUpdateObserver
+DonationReceiptObserver --> Notifier
+EventUpdateObserver --> Notifier
+Notifier --> NotificationStrategy
+NotificationStrategy <|.. EmailStrategy
+NotificationStrategy <|.. SmsStrategy
+NotificationStrategy <|.. SocialMediaStrategy
+NotificationFactory ..> NotificationStrategy : creates
+@enduml

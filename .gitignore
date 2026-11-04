@@ -29,5 +29,5 @@ target/
 # Local secrets
 .env
 
-# Documents and diagrams (kept locally, not in the repository)
-docs/
+# Personal study notes (local only)
+docs/DISCUSSION_GUIDE.md
